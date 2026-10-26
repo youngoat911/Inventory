@@ -1,7 +1,7 @@
 // test-user-creation.js
 import 'dotenv/config';
-import { pool } from './src/db/pool.js';
-import * as userService from './src/modules/users/users.service.js';
+import { pool } from '../../src/db/pool.js';
+import * as userService from '../../src/modules/users/users.service.js';
 
 async function testUserCreation() {
   console.log('🧪 Testing User Creation and Data Persistence\n');

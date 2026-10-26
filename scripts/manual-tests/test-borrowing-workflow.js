@@ -15,8 +15,8 @@
  */
 
 import 'dotenv/config';
-import { pool } from './src/db/pool.js';
-import * as issuesService from './src/modules/issues/issues.service.js';
+import { pool } from '../../src/db/pool.js';
+import * as issuesService from '../../src/modules/issues/issues.service.js';
 
 // Test utilities
 function log(message, data = null) {

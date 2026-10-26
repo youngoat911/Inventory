@@ -5,9 +5,9 @@
  */
 
 import 'dotenv/config';
-import { pool } from './src/db/pool.js';
-import * as alertsService from './src/modules/alerts/alerts.service.js';
-import * as alertsRepository from './src/modules/alerts/alerts.repository.js';
+import { pool } from '../../src/db/pool.js';
+import * as alertsService from '../../src/modules/alerts/alerts.service.js';
+import * as alertsRepository from '../../src/modules/alerts/alerts.repository.js';
 
 async function testAlertsSystem() {
   console.log('🧪 Testing Alerts System\n');

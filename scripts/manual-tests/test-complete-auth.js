@@ -1,6 +1,6 @@
 // test-complete-auth.js
 import 'dotenv/config';
-import { pool } from './src/db/pool.js';
+import { pool } from '../../src/db/pool.js';
 
 async function testCompleteAuth() {
   console.log('🧪 Testing Complete Authentication System\n');
