@@ -4,6 +4,11 @@ import Icon from './Icon'
 export default function Modal({ title, onClose, children, footer, size = 'md' }) {
   const firstFocusRef = useRef(null)
   const previousFocusRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement
@@ -12,7 +17,7 @@ export default function Modal({ title, onClose, children, footer, size = 'md' })
     document.body.style.overflow = 'hidden'
 
     function onKey(e) {
-      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Escape') { onCloseRef.current(); return }
       if (e.key !== 'Tab') return
       const el = firstFocusRef.current?.closest('.modal')
       if (!el) return
@@ -32,7 +37,7 @@ export default function Modal({ title, onClose, children, footer, size = 'md' })
       document.removeEventListener('keydown', onKey)
       previousFocusRef.current?.focus()
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div
