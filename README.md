@@ -17,6 +17,12 @@ npm install
 npm run db:migrate
 ```
 
+To add a starter administrator, catalog, location, and sample asset to a local database, set `SEED_ADMIN_PASSWORD` in `.env` and run:
+
+```bash
+npm run db:seed:default
+```
+
 `npm run start:prod` runs migrations and seeds a small, repeatable demo inventory before starting the API. Set the Render service's Start Command to `npm run start:prod` to seed automatically on each deployment. The seeder accepts Render's internal database URL when running on a Render service; for a manual run from your machine, set `DATABASE_URL` to the Render external database URL and run:
 
 ```bash
