@@ -16,7 +16,7 @@ export default function Verifications() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '', start_date: '', end_date: '' })
+  const [form, setForm] = useState({ name: '', description: '', org_unit_id: '', start_date: '', end_date: '' })
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -38,9 +38,18 @@ export default function Verifications() {
     e.preventDefault()
     setSaving(true)
     try {
-      await api('/verifications/cycles', { method: 'POST', body: form })
+      await api('/verifications/cycles', {
+        method: 'POST',
+        body: {
+          name: form.name,
+          description: form.description || undefined,
+          org_unit_id: form.org_unit_id,
+          starts_on: form.start_date,
+          ends_on: form.end_date,
+        },
+      })
       setShowCreate(false)
-      setForm({ name: '', description: '', start_date: '', end_date: '' })
+      setForm({ name: '', description: '', org_unit_id: '', start_date: '', end_date: '' })
       toast.success('Verification cycle created')
       load()
     } catch (e) {
@@ -126,6 +135,10 @@ export default function Verifications() {
               <label htmlFor="c-desc">Description</label>
               <textarea id="c-desc" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
+            <div className="field">
+              <label htmlFor="c-org">Club ID</label>
+              <input id="c-org" value={form.org_unit_id} onChange={(e) => setForm((f) => ({ ...f, org_unit_id: e.target.value }))} required placeholder="UUID of club" />
+            </div>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="c-start">Start date</label>
@@ -133,7 +146,7 @@ export default function Verifications() {
               </div>
               <div className="field">
                 <label htmlFor="c-end">End date</label>
-                <input id="c-end" type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+                <input id="c-end" type="date" value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} required />
               </div>
             </div>
           </form>

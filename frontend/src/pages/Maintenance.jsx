@@ -48,9 +48,9 @@ export default function Maintenance() {
         method: 'POST',
         body: {
           asset_id: form.asset_id,
+          type: 'repair',
           description: form.description,
-          scheduled_date: form.scheduled_date || undefined,
-          estimated_cost: form.estimated_cost ? Number(form.estimated_cost) : undefined,
+          cost: form.estimated_cost ? Number(form.estimated_cost) : undefined,
         },
       })
       setShowCreate(false)

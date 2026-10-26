@@ -10,7 +10,7 @@ import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../context/ToastContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 
-const emptyForm = { asset_id: '', reason: '', notes: '', disposal_method: 'written_off' }
+const emptyForm = { asset_id: '', reason: 'damaged', details: '', quantity: 1 }
 
 export default function Disposals() {
   usePageTitle('Disposals')
@@ -96,8 +96,8 @@ export default function Disposals() {
               <thead>
                 <tr>
                   <th scope="col">Asset</th>
-                  <th scope="col">Method</th>
                   <th scope="col">Reason</th>
+                  <th scope="col">Details</th>
                   <th scope="col">Status</th>
                   {isAdmin && <th scope="col">Actions</th>}
                 </tr>
@@ -106,13 +106,13 @@ export default function Disposals() {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td data-label="Asset" data-card-title>{item.asset_name ?? item.asset_id?.slice(0, 8)}</td>
-                    <td data-label="Method">{item.disposal_method?.replace(/_/g, ' ')}</td>
-                    <td data-label="Reason">{item.reason}</td>
+                    <td data-label="Reason">{item.reason?.replace(/_/g, ' ')}</td>
+                    <td data-label="Details">{item.details || '—'}</td>
                     <td data-label="Status"><StatusBadge value={item.status} /></td>
                     {isAdmin && (
                       <td data-actions>
                         <div className="row-actions">
-                          {item.status === 'requested' && (
+                          {(item.status === 'requested' || item.status === 'proposed') && (
                             <>
                               <button
                                 type="button"
@@ -167,25 +167,27 @@ export default function Disposals() {
               />
             </div>
             <div className="field">
-              <label htmlFor="d-method">Method</label>
-              <select
-                id="d-method"
-                value={form.disposal_method}
-                onChange={(e) => setForm((f) => ({ ...f, disposal_method: e.target.value }))}
-              >
-                <option value="written_off">Written off</option>
-                <option value="sold">Sold</option>
-                <option value="donated">Donated</option>
-                <option value="scrapped">Scrapped</option>
-              </select>
-            </div>
-            <div className="field">
               <label htmlFor="d-reason">Reason</label>
-              <textarea
+              <select
                 id="d-reason"
                 value={form.reason}
                 onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
-                required
+              >
+                <option value="damaged">Damaged</option>
+                <option value="obsolete">Obsolete</option>
+                <option value="lost">Lost</option>
+                <option value="stolen">Stolen</option>
+                <option value="end_of_life">End of life</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="d-details">Details</label>
+              <textarea
+                id="d-details"
+                value={form.details}
+                onChange={(e) => setForm((f) => ({ ...f, details: e.target.value }))}
+                placeholder="Add context for this disposal request"
               />
             </div>
           </form>
