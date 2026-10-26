@@ -17,6 +17,7 @@
     "migrate": "node-pg-migrate -m migrations up",
     "db:migrate": "node-pg-migrate -m migrations up",
     "db:rollback": "node-pg-migrate -m migrations down",
+    "db:seed:default": "node scripts/seed-default-data.js",
     "db:seed:demo": "node scripts/seed-demo-data.js",
     "deployment:check": "node scripts/deployment-check.js"
   },
