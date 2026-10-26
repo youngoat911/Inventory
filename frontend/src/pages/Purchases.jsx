@@ -3,8 +3,10 @@ import { orgUnitsApi, purchasesApi, vendorsApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const emptyForm = {
   purchase_order_no: '',
@@ -20,6 +22,7 @@ const emptyForm = {
 }
 
 export default function Purchases() {
+  usePageTitle('Purchases')
   const { isAdmin } = useAuth()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
@@ -189,18 +192,23 @@ export default function Purchases() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading purchases…</div>
+            <SkeletonTable rows={8} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="No purchases yet." />
+            <EmptyState
+              icon="shopping-cart"
+              title="No purchases yet"
+              description="Record purchases to track equipment orders."
+              action={isAdmin ? { label: 'New purchase', onClick: () => { setForm(emptyForm); setShowCreate(true) } } : undefined}
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>PO no.</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Payment</th>
-                  <th />
+                  <th scope="col">PO no.</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Payment</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

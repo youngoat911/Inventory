@@ -3,8 +3,10 @@ import { assetsApi, categoriesApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const emptyForm = {
   name: '',
@@ -21,6 +23,7 @@ const emptyForm = {
 }
 
 export default function Assets() {
+  usePageTitle('Assets')
   const { isAdmin } = useAuth()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
@@ -233,19 +236,24 @@ export default function Assets() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading assets…</div>
+            <SkeletonTable rows={8} cols={6} />
           ) : items.length === 0 ? (
-            <EmptyState message={isAdmin ? 'No assets found. Add one to get started.' : 'No assets found.'} />
+            <EmptyState
+              icon="box"
+              title="No assets found"
+              description={isAdmin ? 'Add an asset to get started with inventory tracking.' : undefined}
+              action={isAdmin ? { label: 'Add asset', onClick: () => { setForm(emptyForm); setShowCreate(true) } } : undefined}
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Condition</th>
-                  <th>Qty</th>
-                  <th>Tracking</th>
-                  <th />
+                  <th scope="col">Name</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Condition</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Tracking</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

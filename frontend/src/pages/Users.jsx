@@ -3,6 +3,8 @@ import { usersApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const ROLE_OPTIONS = ['super_admin', 'org_admin', 'berm_incharge', 'borrower', 'auditor']
 
@@ -16,6 +18,7 @@ const emptyUser = {
 }
 
 export default function Users() {
+  usePageTitle('Users')
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [q, setQ] = useState('')
@@ -175,18 +178,23 @@ export default function Users() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading users…</div>
+            <SkeletonTable rows={8} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="No users found." />
+            <EmptyState
+              icon="users"
+              title="No users found"
+              description="Register users or add accounts to manage access."
+              action={{ label: 'New user', onClick: () => { setForm(emptyUser); setShowCreate(true) } }}
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Roll</th>
-                  <th>Active</th>
-                  <th />
+                  <th scope="col">Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Roll</th>
+                  <th scope="col">Active</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

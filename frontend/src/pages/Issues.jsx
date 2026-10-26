@@ -3,10 +3,13 @@ import { assetsApi, dropBoxesApi, issuesApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export default function Issues() {
+  usePageTitle('Borrowing')
   const { isAdmin } = useAuth()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
@@ -192,19 +195,24 @@ export default function Issues() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading loans…</div>
+            <SkeletonTable rows={8} cols={6} />
           ) : items.length === 0 ? (
-            <EmptyState message="No loans in this view." />
+            <EmptyState
+              icon="hand-helping"
+              title="No loans in this view"
+              description="Request a loan to check out equipment."
+              action={{ label: 'Request loan', onClick: () => setShowCreate(true) }}
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>Asset</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Due</th>
-                  <th>Purpose</th>
-                  <th />
+                  <th scope="col">Asset</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Due</th>
+                  <th scope="col">Purpose</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

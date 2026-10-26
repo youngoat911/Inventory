@@ -3,10 +3,13 @@ import { alertsApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export default function Alerts() {
+  usePageTitle('Alerts')
   const { isAdmin, isSuperAdmin } = useAuth()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
@@ -144,18 +147,22 @@ export default function Alerts() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading alerts…</div>
+            <SkeletonTable rows={8} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="No alerts in this view." />
+            <EmptyState
+              icon="bell"
+              title="No alerts in this view"
+              description="System alerts and stock warnings will appear here."
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Type</th>
-                  <th>Severity</th>
-                  <th>Status</th>
-                  <th />
+                  <th scope="col">Title</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Severity</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

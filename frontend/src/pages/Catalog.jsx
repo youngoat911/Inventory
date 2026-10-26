@@ -4,6 +4,8 @@ import { categoriesApi, locationsApi, orgUnitsApi } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
+import { SkeletonTable } from '../components/Skeleton'
+import { usePageTitle } from '../hooks/usePageTitle'
 import DropBoxes from './DropBoxes'
 
 const tabs = [
@@ -14,6 +16,7 @@ const tabs = [
 ]
 
 export default function Catalog() {
+  usePageTitle('Catalog')
   const { isAdmin, isSuperAdmin } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
@@ -333,9 +336,9 @@ export default function Catalog() {
       {tab === 'drop-boxes' ? <DropBoxes embedded /> : <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading…</div>
+            <SkeletonTable rows={6} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="Nothing in this catalog yet." />
+            <EmptyState icon="layout-grid" title="Nothing in this catalog yet" />
           ) : tab === 'categories' ? (
             <table className="responsive-table">
               <thead>

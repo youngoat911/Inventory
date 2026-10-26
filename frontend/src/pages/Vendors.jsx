@@ -3,6 +3,8 @@ import { vendorsApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const emptyForm = {
   name: '',
@@ -16,6 +18,7 @@ const emptyForm = {
 }
 
 export default function Vendors() {
+  usePageTitle('Vendors')
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [search, setSearch] = useState('')
@@ -217,18 +220,23 @@ export default function Vendors() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading vendors…</div>
+            <SkeletonTable rows={8} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="No vendors yet." />
+            <EmptyState
+              icon="truck"
+              title="No vendors yet"
+              description="Add vendors to link with purchase orders."
+              action={{ label: 'New vendor', onClick: () => { setForm(emptyForm); setShowCreate(true) } }}
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Code</th>
-                  <th>Contact</th>
-                  <th>Active</th>
-                  <th />
+                  <th scope="col">Name</th>
+                  <th scope="col">Code</th>
+                  <th scope="col">Contact</th>
+                  <th scope="col">Active</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

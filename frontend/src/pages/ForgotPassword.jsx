@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { authApi } from '../api/client'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export default function ForgotPassword() {
+  usePageTitle('Forgot password')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
