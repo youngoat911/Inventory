@@ -1,31 +1,65 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import Icon from './Icon'
 
-export default function Modal({ title, onClose, children, footer }) {
+export default function Modal({ title, onClose, children, footer, size = 'md' }) {
+  const firstFocusRef = useRef(null)
+  const previousFocusRef = useRef(null)
+
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+    previousFocusRef.current = document.activeElement
+    const timer = setTimeout(() => firstFocusRef.current?.focus(), 50)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function onKey(e) {
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key !== 'Tab') return
+      const el = firstFocusRef.current?.closest('.modal')
+      if (!el) return
+      const focusable = [...el.querySelectorAll(
+        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      )]
+      if (!focusable.length) return
+      const first = focusable[0], last = focusable.at(-1)
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+
+    document.addEventListener('keydown', onKey)
+    return () => {
+      clearTimeout(timer)
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', onKey)
+      previousFocusRef.current?.focus()
+    }
   }, [onClose])
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
-        className="modal"
+        className={`modal modal-${size}`}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby="modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2>{title}</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
-            ×
+          <h2 id="modal-title" ref={firstFocusRef} tabIndex={-1}>{title}</h2>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            <Icon name="x" size={20} />
           </button>
         </div>
         <div className="modal-body">{children}</div>
-        {footer ? <div className="modal-footer">{footer}</div> : null}
+        {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>
   )
