@@ -18,6 +18,10 @@ import auditLogRouter from './modules/audit-log/audit-log.routes.js';
 import reportsRouter from './modules/reports/reports.routes.js';
 import alertsRouter from './modules/alerts/alerts.routes.js';
 import transfersRouter from './modules/transfers/transfers.routes.js';
+import disposalsRouter from './modules/disposals/disposals.routes.js';
+import maintenanceRouter from './modules/maintenance/maintenance.routes.js';
+import notificationsRouter from './modules/notifications/notifications.routes.js';
+import verificationsRouter from './modules/verifications/verifications.routes.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { requestLogger } from './middleware/request-logger.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -99,6 +103,10 @@ app.use('/api/v1/audit-log', authenticate, auditLogRouter);
 app.use('/api/v1', authenticate, reportsRouter);
 app.use('/api/v1/alerts', authenticate, alertsRouter);
 app.use('/api/v1/transfers', authenticate, transfersRouter);
+app.use('/api/v1/disposals', authenticate, disposalsRouter);
+app.use('/api/v1/maintenance', authenticate, maintenanceRouter);
+app.use('/api/v1/notifications', authenticate, notificationsRouter);
+app.use('/api/v1/verifications', authenticate, verificationsRouter);
 
 // Serve static files from frontend build in production
 if (process.env.NODE_ENV === 'production') {

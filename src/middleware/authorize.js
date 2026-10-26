@@ -44,6 +44,9 @@ const scopedResources = {
   purchase: 'SELECT org_unit_id AS org_id FROM purchases WHERE id = $1',
   transfer: `SELECT t.from_org_id AS org_id, t.to_org_id AS related_org_id, a.owner_org_id AS asset_org_id
              FROM transfers t JOIN assets a ON a.id = t.asset_id WHERE t.id = $1`,
+  disposal: 'SELECT a.owner_org_id AS org_id FROM disposals d JOIN assets a ON a.id = d.asset_id WHERE d.id = $1',
+  maintenance: 'SELECT a.owner_org_id AS org_id FROM maintenance_records m JOIN assets a ON a.id = m.asset_id WHERE m.id = $1',
+  verification_cycle: 'SELECT org_unit_id AS org_id FROM verification_cycles WHERE id = $1',
   location: 'SELECT org_unit_id AS org_id FROM locations WHERE id = $1',
   dropbox: 'SELECT org_unit_id AS org_id FROM drop_boxes WHERE id = $1',
   alert: `SELECT COALESCE(al.org_unit_id, asset.owner_org_id, issue_asset.owner_org_id, i.on_behalf_of_org) AS org_id
