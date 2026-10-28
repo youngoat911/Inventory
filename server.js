@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { app } from './src/app.js';
 import { checkDatabase } from './src/db/pool.js';
 import logger from './src/utils/logger.js';
+import { initWebSocketServer } from './src/services/websocket.service.js';
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0'
@@ -14,6 +15,9 @@ const startServer = async () => {
     const server = app.listen(PORT, HOST,() => {
       logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, `Server listening running ${HOST} at port ${PORT}`);
     });
+
+    // Initialize real-time WebSocket server
+    initWebSocketServer(server);
 
     const shutdown = (signal) => {
       logger.info({ signal }, 'Shutting down server');

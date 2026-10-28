@@ -22,6 +22,7 @@ import disposalsRouter from './modules/disposals/disposals.routes.js';
 import maintenanceRouter from './modules/maintenance/maintenance.routes.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
 import verificationsRouter from './modules/verifications/verifications.routes.js';
+import changeBroadcaster from './middleware/change-broadcaster.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { requestLogger } from './middleware/request-logger.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -87,6 +88,9 @@ app.use('/api/v1/auth', authRoutes);
 app.get('/api/v1/users/me', authenticate, (req, res) => {
   res.status(200).json({ data: req.user });
 });
+
+// Broadcast real-time notifications on mutations
+app.use('/api/v1', changeBroadcaster);
 
 // Mount resource routers
 app.use('/api/v1/users', authenticate, usersRouter);
