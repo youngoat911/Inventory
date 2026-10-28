@@ -37,6 +37,10 @@ export default function Layout() {
   const wasOpen = useRef(false)
 
   useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  useEffect(() => {
     if (!menuOpen) return undefined
     const toggle = toggleRef.current
     const prev = document.body.style.overflow

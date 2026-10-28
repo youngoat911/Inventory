@@ -194,7 +194,7 @@ h1 {
 /* ——— App shell ——— */
 .app-shell {
   display: grid;
-  grid-template-columns: var(--sidebar) 1fr;
+  grid-template-columns: minmax(0, var(--sidebar)) minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100svh;
 }
@@ -202,6 +202,8 @@ h1 {
 .sidebar {
   position: sticky;
   top: 0;
+  width: var(--sidebar);
+  min-width: 0;
   height: 100vh;
   padding: 1.5rem 1rem;
   border-right: 1px solid var(--line);
@@ -279,6 +281,8 @@ h1 {
 }
 
 .sidebar-user {
+  width: 100%;
+  min-width: 0;
   padding: 0.75rem;
   border-top: 1px solid var(--line);
   display: flex;
