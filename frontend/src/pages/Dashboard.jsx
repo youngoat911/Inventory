@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { alertsApi, dashboardApi, issuesApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
+import NotificationIcon from '../components/NotificationIcon'
 import { SkeletonStat, SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../context/ToastContext'
@@ -66,6 +67,9 @@ export default function Dashboard() {
             {loading ? 'Refreshing…' : 'Refresh'}
           </button>
           <Link to="/assets" className="btn btn-primary">Browse assets</Link>
+          <span className="dashboard-notification">
+            <NotificationIcon />
+          </span>
         </div>
       </div>
 

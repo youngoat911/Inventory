@@ -910,6 +910,10 @@ tr:hover td {
 }
 
 @media (max-width: 1023px) {
+  .dashboard-notification {
+    display: none;
+  }
+
   .app-shell {
     display: block;
     min-height: 100dvh;
@@ -1675,6 +1679,11 @@ tr:hover td {
   align-items: center;
 }
 
+.dashboard-notification {
+  display: flex;
+  align-items: center;
+}
+
 .notification-trigger {
   position: relative;
   display: inline-flex;
@@ -1756,14 +1765,6 @@ tr:hover td {
   flex-direction: column;
   overflow: hidden;
   animation: popover-slide var(--dur-fast) var(--ease-out);
-}
-
-/* In the desktop sidebar user-actions area, anchor popover upwards/to the right */
-.sidebar .notification-popover {
-  top: auto;
-  bottom: calc(100% + 0.5rem);
-  left: 0;
-  right: auto;
 }
 
 @keyframes popover-slide {
@@ -1982,4 +1983,3 @@ tr:hover td {
 .view-all-link:hover {
   text-decoration: underline;
 }
-

@@ -149,7 +149,6 @@ export default function Layout() {
             </div>
           </div>
           <div className="sidebar-user-actions">
-            <NotificationIcon />
             <button
               type="button"
               className="btn btn-ghost btn-sm icon-btn"
