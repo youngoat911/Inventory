@@ -209,8 +209,8 @@ h1 {
   border-right: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
   backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 1.5rem;
 }
 
@@ -281,7 +281,6 @@ h1 {
 }
 
 .sidebar-user {
-  width: 100%;
   min-width: 0;
   padding: 0.75rem;
   border-top: 1px solid var(--line);
