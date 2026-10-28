@@ -15,6 +15,10 @@ export default defineConfig({
         target: 'http://172.31.50.236:3000',
         changeOrigin: true,
       },
+      '/ws': {
+        target: 'http://172.31.50.236:3000',
+        ws: true,
+      },
     },
   },
 })

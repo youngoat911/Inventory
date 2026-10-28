@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useNotifications } from '../context/NotificationContext'
 import Icon from './Icon'
+import NotificationIcon from './NotificationIcon'
 
 const links = [
   { to: '/', label: 'Dashboard', icon: 'home', end: true },
@@ -26,6 +28,7 @@ const links = [
 export default function Layout() {
   const { user, logout, isAdmin, canViewAuditLog } = useAuth()
   const { theme, toggle: toggleTheme } = useTheme()
+  const { unreadCount } = useNotifications()
   const [openPath, setOpenPath] = useState(null)
   const location = useLocation()
   const menuOpen = openPath === location.pathname
@@ -85,9 +88,12 @@ export default function Layout() {
           <Icon name="menu" size={22} />
         </button>
         <strong>Gymkhana Inventory</strong>
-        <span className="user-avatar" aria-label={user?.full_name || user?.institute_email || 'User'}>
-          {initials}
-        </span>
+        <div className="mobile-topbar-actions">
+          <NotificationIcon />
+          <span className="user-avatar" aria-label={user?.full_name || user?.institute_email || 'User'}>
+            {initials}
+          </span>
+        </div>
       </header>
 
       {menuOpen && (
@@ -127,6 +133,9 @@ export default function Layout() {
             <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setOpenPath(null)}>
               <Icon name={link.icon} size={18} />
               <span>{link.label}</span>
+              {link.to === '/notifications' && unreadCount > 0 && (
+                <span className="nav-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -140,6 +149,7 @@ export default function Layout() {
             </div>
           </div>
           <div className="sidebar-user-actions">
+            <NotificationIcon />
             <button
               type="button"
               className="btn btn-ghost btn-sm icon-btn"

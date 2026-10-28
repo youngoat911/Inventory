@@ -6,6 +6,7 @@ import { SkeletonStat, SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../context/ToastContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 export default function Dashboard() {
   usePageTitle('Dashboard')
@@ -16,6 +17,10 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState(null)
   const [loading, setLoading] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
+
+  useAutoRefresh(['assets', 'issues', 'alerts', 'transfers', 'maintenance', 'disposals'], () => {
+    setReloadKey((k) => k + 1)
+  })
 
   useEffect(() => {
     let cancelled = false

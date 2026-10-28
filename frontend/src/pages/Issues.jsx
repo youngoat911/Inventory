@@ -7,6 +7,7 @@ import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 export default function Issues() {
   usePageTitle('Borrowing')
@@ -52,6 +53,10 @@ export default function Issues() {
   useEffect(() => {
     load()
   }, [load])
+
+  useAutoRefresh(['issues', 'assets'], () => {
+    load()
+  })
 
   useEffect(() => {
     assetsApi

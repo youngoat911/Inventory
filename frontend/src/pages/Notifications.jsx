@@ -4,6 +4,7 @@ import EmptyState from '../components/EmptyState'
 import { SkeletonTable } from '../components/Skeleton'
 import { useToast } from '../context/ToastContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 export default function Notifications() {
   usePageTitle('Notifications')
@@ -25,6 +26,10 @@ export default function Notifications() {
   }, [filter]) // eslint-disable-line
 
   useEffect(() => { load() }, [load])
+
+  useAutoRefresh(['notifications'], () => {
+    load()
+  })
 
   async function markRead(id) {
     try {

@@ -5,6 +5,7 @@ import App from './App.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
+import { NotificationProvider } from './context/NotificationContext.jsx'
 import './styles/index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
-            <App />
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>

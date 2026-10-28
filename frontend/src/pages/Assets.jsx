@@ -7,6 +7,7 @@ import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const emptyForm = {
   name: '',
@@ -61,6 +62,10 @@ export default function Assets() {
   useEffect(() => {
     load()
   }, [load])
+
+  useAutoRefresh(['assets'], () => {
+    load()
+  })
 
   useEffect(() => {
     categoriesApi
