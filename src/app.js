@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRouter from './routes/api.routes.js';
 import { checkDatabase } from './db/pool.js';
+import changeBroadcaster from './middleware/change-broadcaster.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { requestLogger } from './middleware/request-logger.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -62,6 +63,7 @@ app.get('/api', (req, res) => {
 });
 
 // Mount consolidated v1 API router
+app.use('/api/v1', changeBroadcaster);
 app.use('/api/v1', apiRouter);
 
 // Serve static files from frontend build in production

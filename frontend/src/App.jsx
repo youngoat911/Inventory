@@ -1,74 +1,101 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import Layout from './components/Layout'
-import Alerts from './pages/Alerts'
-import Assets from './pages/Assets'
-import AuditLog from './pages/AuditLog'
-import Blocks from './pages/Blocks'
-import Catalog from './pages/Catalog'
-import Dashboard from './pages/Dashboard'
-import ForgotPassword from './pages/ForgotPassword'
-import Issues from './pages/Issues'
-import Login from './pages/Login'
-import Purchases from './pages/Purchases'
-import Register from './pages/Register'
-import Reports from './pages/Reports'
-import ResetPassword from './pages/ResetPassword'
-import Transfers from './pages/Transfers'
-import Users from './pages/Users'
-import Vendors from './pages/Vendors'
+import { SkeletonLine } from './components/Skeleton'
+
+const Dashboard      = lazy(() => import('./pages/Dashboard'))
+const Assets         = lazy(() => import('./pages/Assets'))
+const Issues         = lazy(() => import('./pages/Issues'))
+const Transfers      = lazy(() => import('./pages/Transfers'))
+const Alerts         = lazy(() => import('./pages/Alerts'))
+const Catalog        = lazy(() => import('./pages/Catalog'))
+const Purchases      = lazy(() => import('./pages/Purchases'))
+const Vendors        = lazy(() => import('./pages/Vendors'))
+const Users          = lazy(() => import('./pages/Users'))
+const Blocks         = lazy(() => import('./pages/Blocks'))
+const Reports        = lazy(() => import('./pages/Reports'))
+const AuditLog       = lazy(() => import('./pages/AuditLog'))
+const Login          = lazy(() => import('./pages/Login'))
+const Register       = lazy(() => import('./pages/Register'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword  = lazy(() => import('./pages/ResetPassword'))
+const NotFound       = lazy(() => import('./pages/NotFound'))
+const Forbidden      = lazy(() => import('./pages/Forbidden'))
+const Disposals      = lazy(() => import('./pages/Disposals'))
+const Maintenance    = lazy(() => import('./pages/Maintenance'))
+const Notifications  = lazy(() => import('./pages/Notifications'))
+const Verifications  = lazy(() => import('./pages/Verifications'))
+
+function LoadingScreen() {
+  return (
+    <div className="loading-screen" role="status" aria-live="polite" aria-label="Loading page">
+      <div className="loading-card" aria-hidden="true">
+        <SkeletonLine width="42%" height="1.5rem" />
+        <SkeletonLine width="72%" height="0.9rem" />
+        <SkeletonLine width="100%" height="8rem" />
+      </div>
+    </div>
+  )
+}
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
-  if (loading) return <div className="loading">Loading…</div>
+  if (loading) return <LoadingScreen />
   if (!isAuthenticated) return <Navigate to="/login" replace />
   return children
 }
 
 function AdminRoute({ children }) {
   const { isAdmin, loading } = useAuth()
-  if (loading) return <div className="loading">Loading…</div>
-  if (!isAdmin) return <Navigate to="/" replace />
+  if (loading) return <LoadingScreen />
+  if (!isAdmin) return <Forbidden />
   return children
 }
 
 function AuditRoute({ children }) {
   const { canViewAuditLog, loading } = useAuth()
-  if (loading) return <div className="loading">Loading…</div>
-  if (!canViewAuditLog) return <Navigate to="/" replace />
+  if (loading) return <LoadingScreen />
+  if (!canViewAuditLog) return <Forbidden />
   return children
 }
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Dashboard />} />
-        <Route path="assets" element={<Assets />} />
-        <Route path="issues" element={<Issues />} />
-        <Route path="alerts" element={<Alerts />} />
-        <Route path="catalog" element={<Catalog />} />
-        <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
-        <Route path="vendors" element={<AdminRoute><Vendors /></AdminRoute>} />
-        <Route path="purchases" element={<Purchases />} />
-        <Route path="transfers" element={<Transfers />} />
-        <Route path="drop-boxes" element={<Navigate to="/catalog?tab=drop-boxes" replace />} />
-        <Route path="blocks" element={<AdminRoute><Blocks /></AdminRoute>} />
-        <Route path="audit-log" element={<AuditRoute><AuditLog /></AuditRoute>} />
-        <Route path="reports" element={<AdminRoute><Reports /></AdminRoute>} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="assets" element={<Assets />} />
+          <Route path="issues" element={<Issues />} />
+          <Route path="transfers" element={<Transfers />} />
+          <Route path="disposals" element={<Disposals />} />
+          <Route path="maintenance" element={<Maintenance />} />
+          <Route path="alerts" element={<Alerts />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="catalog" element={<Catalog />} />
+          <Route path="purchases" element={<Purchases />} />
+          <Route path="vendors" element={<AdminRoute><Vendors /></AdminRoute>} />
+          <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
+          <Route path="blocks" element={<AdminRoute><Blocks /></AdminRoute>} />
+          <Route path="verifications" element={<AdminRoute><Verifications /></AdminRoute>} />
+          <Route path="reports" element={<AdminRoute><Reports /></AdminRoute>} />
+          <Route path="audit-log" element={<AuditRoute><AuditLog /></AuditRoute>} />
+          <Route path="drop-boxes" element={<Navigate to="/catalog?tab=drop-boxes" replace />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   )
 }

@@ -37,15 +37,19 @@ Inventory/
 │       ├── blocks/                      # Borrower blocks & restrictions
 │       ├── borrower-blocks/             # Borrower blocks (retained for compatibility)
 │       ├── categories/                  # Asset classifications
+│       ├── disposals/                   # Asset disposal requests and approvals
 │       ├── drop-boxes/                  # Physical return drop box endpoints
 │       ├── issues/                      # Asset checkouts, returns, renewals & loan lifecycle
 │       ├── locations/                   # Physical storage & warehouse locations
+│       ├── maintenance/                 # Asset maintenance tracking
 │       ├── org-units/                   # Campus/organization units & departments
+│       ├── notifications/               # User notifications and read status
 │       ├── purchases/                   # Asset acquisition records & vendor purchases
 │       ├── reports/                     # Utilization, overdue loans & cost analytics
 │       ├── roles/                       # System RBAC roles & user assignments
 │       ├── transfers/                   # Custody transfers between organization units
 │       ├── users/                       # User management & account statuses
+│       ├── verifications/               # Inventory verification cycles
 │       └── vendors/                     # Supplier & vendor directories
 │
 ├── frontend/                            # React + Vite Client Application
@@ -61,6 +65,7 @@ Inventory/
 │   ├── manual-tests/                    # Verification & automated sanity scripts
 │   ├── create-test-user.js              # CLI test user generator
 │   ├── deployment-check.js              # Production readiness inspection
+│   ├── seed-default-data.js             # Starter administrator and inventory seeder
 │   └── seed-demo-data.js                # Idempotent demo data seeder
 │
 ├── migrations/                          # PostgreSQL schema migrations (node-pg-migrate)
@@ -151,6 +156,11 @@ Run database migrations:
 npm run db:migrate
 ```
 
+To add a starter administrator, catalog, location, and sample asset to a local database, set `SEED_ADMIN_PASSWORD` in `.env` and run:
+```bash
+npm run db:seed:default
+```
+
 To seed demo data (creates sample users, roles, categories, locations, assets, and active loans):
 ```bash
 # Local development:
@@ -159,6 +169,8 @@ npm run db:seed:demo
 # For manual execution against a remote database (e.g. Render):
 npm run db:seed:demo -- --confirm-render
 ```
+
+`npm run start:prod` runs migrations and seeds demo inventory before starting the API. Set the Render service's Start Command to `npm run start:prod` to seed on deployment. For a manual run from your machine against Render, set `DATABASE_URL` to the external database URL and use the `--confirm-render` command above.
 
 ---
 
@@ -201,11 +213,15 @@ npm run start:prod
 | **Assets** | `/assets` | Search, filter, add, edit, track, and export physical equipment. |
 | **Issues & Loans** | `/issues` | Issue equipment, check-in returns, renew active loans, or report lost items. |
 | **Transfers** | `/transfers` | Transfer asset custody between different departments or units. |
+| **Disposals** | `/disposals` | Submit and review asset disposal requests. |
+| **Maintenance** | `/maintenance` | Track and resolve asset maintenance. |
 | **Alerts** | `/alerts` | View, filter, acknowledge, and resolve low-stock and overdue alerts. |
+| **Notifications** | `/notifications` | View notifications and mark them as read. |
 | **Purchases** | `/purchases` | Record vendor equipment orders and restocks. |
 | **Vendors** | `/vendors` | Supplier directory and contact records. |
 | **Drop Boxes** | `/drop-boxes` | Manage physical unassisted drop box collection locations. |
 | **Borrower Blocks** | `/blocks` | Block or unblock users with overdue items from borrowing. |
+| **Verifications** | `/verifications` | Create and manage inventory verification cycles. |
 | **Users** | `/users` | User administration and active account statuses. |
 | **Audit Log** | `/audit-log` | Immutable compliance log of all database entity mutations. |
 | **Reports** | `/reports` | Utilization rates, cost breakdowns, and overdue analytics. |

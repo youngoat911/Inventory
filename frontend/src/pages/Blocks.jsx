@@ -4,8 +4,11 @@ import { blocksApi, usersApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export default function Blocks() {
+  usePageTitle('Borrower Blocks')
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
@@ -105,18 +108,23 @@ export default function Blocks() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading blocks…</div>
+            <SkeletonTable rows={6} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="No borrower blocks." />
+            <EmptyState
+              icon="ban"
+              title="No borrower blocks"
+              description="Users with active blocks will appear here."
+              action={{ label: 'Block user', onClick: () => setShowCreate(true) }}
+            />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>User</th>
-                  <th>Reason</th>
-                  <th>Until</th>
-                  <th>Active</th>
-                  <th />
+                  <th scope="col">User</th>
+                  <th scope="col">Reason</th>
+                  <th scope="col">Until</th>
+                  <th scope="col">Active</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

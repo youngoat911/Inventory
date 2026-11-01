@@ -29,29 +29,32 @@ async function calculateDueDate(assetId, client = pool) {
 // Check if asset is available for borrowing (with optional row locking)
 async function checkAssetAvailability(assetId, requestedQuantity, client = pool, lock = false) {
   const lockClause = lock ? 'FOR UPDATE OF a' : '';
-  
-  const { rows } = await client.query(
-    `SELECT 
+  const { rows: assetRows } = await client.query(
+    `SELECT
       a.id,
-      a.quantity as total_quantity,
+      a.quantity AS total_quantity,
       a.tracking,
       a.is_issuable,
       a.status,
-      a.condition,
-      COALESCE(SUM(i.quantity) FILTER (WHERE i.status IN ('requested', 'active', 'dropped')), 0)::int as issued_quantity
+      a.condition
      FROM assets a
-     LEFT JOIN issues i ON a.id = i.asset_id
      WHERE a.id = $1
-     GROUP BY a.id
      ${lockClause}`,
     [assetId]
   );
 
-  if (!rows[0]) {
+  if (!assetRows[0]) {
     throw new AppError('NOT_FOUND', 'Asset not found', 404);
   }
 
-  const asset = rows[0];
+  const { rows: quantityRows } = await client.query(
+    `SELECT COALESCE(SUM(quantity) FILTER (WHERE status IN ('requested', 'active', 'dropped')), 0)::int AS issued_quantity
+     FROM issues
+     WHERE asset_id = $1`,
+    [assetId]
+  );
+
+  const asset = { ...assetRows[0], issued_quantity: quantityRows[0].issued_quantity };
 
   if (!asset.is_issuable) {
     throw new AppError('NOT_ISSUABLE', 'This asset is not available for borrowing', 409);

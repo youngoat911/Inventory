@@ -3,9 +3,12 @@ import { auditLogApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export default function AuditLog() {
+  usePageTitle('Audit Log')
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [page, setPage] = useState(1)
@@ -86,18 +89,18 @@ export default function AuditLog() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <div className="loading">Loading audit log…</div>
+            <SkeletonTable rows={8} cols={5} />
           ) : items.length === 0 ? (
-            <EmptyState message="No audit entries." />
+            <EmptyState icon="scroll-text" title="No audit entries" description="Changes and administrative actions will be recorded here." />
           ) : (
             <table className="responsive-table">
               <thead>
                 <tr>
-                  <th>When</th>
-                  <th>Table</th>
-                  <th>Action</th>
-                  <th>Record</th>
-                  <th />
+                  <th scope="col">When</th>
+                  <th scope="col">Table</th>
+                  <th scope="col">Action</th>
+                  <th scope="col">Record</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -17,6 +17,10 @@ import reportsRouter from '../modules/reports/reports.routes.js';
 import alertsRouter from '../modules/alerts/alerts.routes.js';
 import transfersRouter from '../modules/transfers/transfers.routes.js';
 import rolesRouter from '../modules/roles/roles.routes.js';
+import disposalsRouter from '../modules/disposals/disposals.routes.js';
+import maintenanceRouter from '../modules/maintenance/maintenance.routes.js';
+import notificationsRouter from '../modules/notifications/notifications.routes.js';
+import verificationsRouter from '../modules/verifications/verifications.routes.js';
 
 const router = express.Router();
 
@@ -41,6 +45,10 @@ router.use('/blocks', authenticate, borrowerBlocksRouter);
 router.use('/audit-log', authenticate, auditLogRouter);
 router.use('/alerts', authenticate, alertsRouter);
 router.use('/transfers', authenticate, transfersRouter);
+router.use('/disposals', authenticate, disposalsRouter);
+router.use('/maintenance', authenticate, maintenanceRouter);
+router.use('/notifications', authenticate, notificationsRouter);
+router.use('/verifications', authenticate, verificationsRouter);
 router.use('/roles', authenticate, rolesRouter);
 router.use('/', authenticate, reportsRouter);
 
