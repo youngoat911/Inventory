@@ -32,6 +32,8 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://berm_app:change_me@localhost:5432/berm_inventory
 
     steps:
       - uses: actions/checkout@v4
