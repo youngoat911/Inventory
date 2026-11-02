@@ -1,8 +1,8 @@
 // test-roles-system.js
 import 'dotenv/config';
-import { pool } from './src/db/pool.js';
-import * as userService from './src/modules/users/users.service.js';
-import * as rolesService from './src/modules/roles/roles.service.js';
+import { pool } from '../../src/db/pool.js';
+import * as userService from '../../src/modules/users/users.service.js';
+import * as rolesService from '../../src/modules/roles/roles.service.js';
 
 async function testRolesSystem() {
   console.log('🧪 Testing Roles System\n');
