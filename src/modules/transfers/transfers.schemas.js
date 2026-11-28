@@ -14,6 +14,9 @@ export const createTransferSchema = z.object({
   to_location_id: z.string().uuid().optional(),
   from_user_id: z.string().uuid().optional(),
   to_user_id: z.string().uuid().optional(),
+  to_issued_to: z.string().trim().max(255).optional(),
+  to_incharge_name: z.string().trim().max(255).optional(),
+  to_incharge_phone: z.string().trim().max(30).optional(),
   reason: z.string().trim().min(1).max(1000),
 });
 
@@ -42,6 +45,9 @@ export const updateTransferSchema = z.object({
   to_location_id: z.string().uuid().optional(),
   from_user_id: z.string().uuid().optional(),
   to_user_id: z.string().uuid().optional(),
+  to_issued_to: z.string().trim().max(255).optional(),
+  to_incharge_name: z.string().trim().max(255).optional(),
+  to_incharge_phone: z.string().trim().max(30).optional(),
   reason: z.string().trim().min(1).max(1000).optional(),
 });
 

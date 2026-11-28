@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { assetsApi, categoriesApi, locationsApi } from '../api/client'
 import { BUDGET_TYPES, budgetTypeLabel } from '../constants'
 import { findCategoryNode, isAssetCategoryLeaf, namedCategoryLevels } from '../categoryTree'
@@ -58,6 +59,7 @@ function formatDate(value) {
 export default function Assets() {
   usePageTitle('Assets')
   const { isAdmin } = useAuth()
+  const navigate = useNavigate()
   const { statuses, conditions, statusMeta, conditionMeta } = useStatusMaster()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
@@ -373,6 +375,13 @@ export default function Assets() {
                           <>
                             <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(asset)}>
                               Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => navigate(`/transfers?asset_id=${asset.id}`)}
+                            >
+                              Transfer
                             </button>
                             <button
                               type="button"

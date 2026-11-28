@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { assetsApi, locationsApi, orgUnitsApi, transfersApi } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
@@ -7,6 +8,24 @@ import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+
+const emptyTransferForm = {
+  asset_id: '',
+  quantity: 1,
+  from_org_id: '',
+  to_org_id: '',
+  from_location_id: '',
+  to_location_id: '',
+  to_issued_to: '',
+  to_incharge_name: '',
+  to_incharge_phone: '',
+  reason: '',
+}
+
+function custodySummary(issuedTo, incharge, phone) {
+  const parts = [issuedTo, incharge && `in-charge ${incharge}${phone ? ` (${phone})` : ''}`].filter(Boolean)
+  return parts.length ? parts.join(' · ') : null
+}
 
 export default function Transfers() {
   usePageTitle('Transfers')
@@ -24,15 +43,8 @@ export default function Transfers() {
   const [rejectModal, setRejectModal] = useState(null)
   const [cancelModal, setCancelModal] = useState(null)
   const [reason, setReason] = useState('')
-  const [form, setForm] = useState({
-    asset_id: '',
-    quantity: 1,
-    from_org_id: '',
-    to_org_id: '',
-    from_location_id: '',
-    to_location_id: '',
-    reason: '',
-  })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [form, setForm] = useState(emptyTransferForm)
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -65,6 +77,26 @@ export default function Transfers() {
     })
   }, [])
 
+  // Opened from an asset's "Transfer" button: /transfers?asset_id=...
+  useEffect(() => {
+    const assetId = searchParams.get('asset_id')
+    if (!assetId || !isAdmin) return
+    setForm({ ...emptyTransferForm, asset_id: assetId })
+    setShowCreate(true)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams, isAdmin])
+
+  const selectedAsset = assets.find((a) => a.id === form.asset_id) || null
+
+  // The picker only preloads 100 assets; fetch the chosen one if it is not among them
+  useEffect(() => {
+    if (!form.asset_id || assets.some((a) => a.id === form.asset_id)) return
+    assetsApi
+      .get(form.asset_id)
+      .then((res) => res.data && setAssets((prev) => [res.data, ...prev]))
+      .catch(() => {})
+  }, [form.asset_id, assets])
+
   async function handleCreate(e) {
     e.preventDefault()
     setSaving(true)
@@ -77,18 +109,13 @@ export default function Transfers() {
         to_org_id: form.to_org_id || undefined,
         from_location_id: form.from_location_id || undefined,
         to_location_id: form.to_location_id || undefined,
+        to_issued_to: form.to_issued_to.trim() || undefined,
+        to_incharge_name: form.to_incharge_name.trim() || undefined,
+        to_incharge_phone: form.to_incharge_phone.trim() || undefined,
         reason: form.reason.trim(),
       })
       setShowCreate(false)
-      setForm({
-        asset_id: '',
-        quantity: 1,
-        from_org_id: '',
-        to_org_id: '',
-        from_location_id: '',
-        to_location_id: '',
-        reason: '',
-      })
+      setForm(emptyTransferForm)
       setPage(1)
       await load()
     } catch (err) {
@@ -164,7 +191,7 @@ export default function Transfers() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <SkeletonTable rows={8} cols={5} />
+            <SkeletonTable rows={8} cols={6} />
           ) : items.length === 0 ? (
             <EmptyState
               icon="arrow-left-right"
@@ -178,6 +205,7 @@ export default function Transfers() {
                 <tr>
                   <th scope="col">Asset</th>
                   <th scope="col">Qty</th>
+                  <th scope="col">Hand-over</th>
                   <th scope="col">Status</th>
                   <th scope="col">Reason</th>
                   <th scope="col">Actions</th>
@@ -191,6 +219,20 @@ export default function Transfers() {
                       <div className="muted">{item.id.slice(0, 8)}</div>
                     </td>
                     <td data-label="Qty">{item.quantity}</td>
+                    <td data-label="Hand-over">
+                      {custodySummary(item.to_issued_to, item.to_incharge_name, item.to_incharge_phone) ? (
+                        <>
+                          <div>→ {custodySummary(item.to_issued_to, item.to_incharge_name, item.to_incharge_phone)}</div>
+                          <div className="muted">
+                            from {custodySummary(item.from_issued_to, item.from_incharge_name, item.from_incharge_phone) || '—'}
+                          </div>
+                        </>
+                      ) : (item.to_location_name || item.to_org_name) ? (
+                        <div className="muted">→ {[item.to_location_name, item.to_org_name].filter(Boolean).join(' · ')}</div>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
                     <td data-label="Status">
                       <StatusBadge value={item.status} />
                     </td>
@@ -275,7 +317,7 @@ export default function Transfers() {
                 <option value="">Select asset</option>
                 {assets.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name}
+                    {a.asset_tag ? `${a.asset_tag} — ` : ''}{a.name}
                   </option>
                 ))}
               </select>
@@ -355,6 +397,45 @@ export default function Transfers() {
                 </select>
               </div>
             </div>
+            {selectedAsset ? (
+              <div className="muted" style={{ fontSize: '0.85rem' }}>
+                Currently: {selectedAsset.location_name || 'no location'}
+                {' · issued to '}{selectedAsset.issued_to || '—'}
+                {' · in-charge '}{selectedAsset.incharge_name || '—'}
+                {selectedAsset.incharge_phone ? ` (${selectedAsset.incharge_phone})` : ''}
+              </div>
+            ) : null}
+            <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Hand over to</legend>
+              <div className="form-row">
+                <div className="field">
+                  <label htmlFor="to_issued_to">Issued to</label>
+                  <input
+                    id="to_issued_to"
+                    value={form.to_issued_to}
+                    onChange={(e) => setForm((p) => ({ ...p, to_issued_to: e.target.value }))}
+                    placeholder="Person, lab or department"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="to_incharge_name">New person in-charge</label>
+                  <input
+                    id="to_incharge_name"
+                    value={form.to_incharge_name}
+                    onChange={(e) => setForm((p) => ({ ...p, to_incharge_name: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="to_incharge_phone">In-charge phone no.</label>
+                <input
+                  id="to_incharge_phone"
+                  type="tel"
+                  value={form.to_incharge_phone}
+                  onChange={(e) => setForm((p) => ({ ...p, to_incharge_phone: e.target.value }))}
+                />
+              </div>
+            </fieldset>
             <div className="field">
               <label htmlFor="reason">Reason</label>
               <textarea

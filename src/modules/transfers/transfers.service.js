@@ -59,23 +59,38 @@ export async function getTransferById(id) {
  */
 export async function createTransfer(transferData, requestedBy) {
   return withTransaction(async (client) => {
+    const changesCustody = Boolean(
+      transferData.to_issued_to || transferData.to_incharge_name || transferData.to_incharge_phone ||
+      transferData.to_user_id
+    );
+
     // Validate from and to are different
-    if (transferData.from_org_id && transferData.to_org_id && 
+    if (!changesCustody &&
+        transferData.from_org_id && transferData.to_org_id &&
         transferData.from_org_id === transferData.to_org_id &&
         transferData.from_location_id === transferData.to_location_id) {
       throw new AppError('INVALID_TRANSFER', 'Source and destination cannot be the same', 409);
     }
 
+    if (!changesCustody && !transferData.to_org_id && !transferData.to_location_id) {
+      throw new AppError(
+        'INVALID_TRANSFER',
+        'Choose a destination: org unit, location, issued-to or person in-charge',
+        422
+      );
+    }
+
     // Lock and check asset
     const assetResult = await client.query(
-      `SELECT a.*, 
-        COALESCE(SUM(i.quantity) FILTER (WHERE i.status IN ('requested', 'active', 'dropped')), 0)::int as issued_quantity,
-        COALESCE(SUM(t.quantity) FILTER (WHERE t.status IN ('requested', 'approved')), 0)::int as transfer_quantity
+      // Subqueries instead of JOIN + GROUP BY: Postgres rejects FOR UPDATE with
+      // GROUP BY, and joining both tables would multiply the summed quantities.
+      `SELECT a.*,
+        (SELECT COALESCE(SUM(i.quantity), 0)::int FROM issues i
+         WHERE i.asset_id = a.id AND i.status IN ('requested', 'active', 'dropped')) as issued_quantity,
+        (SELECT COALESCE(SUM(t.quantity), 0)::int FROM transfers t
+         WHERE t.asset_id = a.id AND t.status IN ('requested', 'approved')) as transfer_quantity
        FROM assets a
-       LEFT JOIN issues i ON a.id = i.asset_id
-       LEFT JOIN transfers t ON a.id = t.asset_id
        WHERE a.id = $1
-       GROUP BY a.id
        FOR UPDATE OF a`,
       [transferData.asset_id]
     );
@@ -92,9 +107,15 @@ export async function createTransfer(transferData, requestedBy) {
         `Only ${availableQuantity} unit(s) available for transfer`, 409);
     }
 
-    // Create transfer
+    // Create transfer, snapshotting where the asset is coming from
     const transfer = await transfersRepository.createTransfer({
       ...transferData,
+      from_org_id: transferData.from_org_id || asset.owner_org_id,
+      from_location_id: transferData.from_location_id || asset.location_id,
+      from_user_id: transferData.from_user_id || asset.responsible_user_id,
+      from_issued_to: asset.issued_to,
+      from_incharge_name: asset.incharge_name,
+      from_incharge_phone: asset.incharge_phone,
       requested_by: requestedBy,
     }, client);
 
@@ -109,6 +130,8 @@ export async function createTransfer(transferData, requestedBy) {
         quantity: transfer.quantity,
         from_org_id: transfer.from_org_id,
         to_org_id: transfer.to_org_id,
+        to_issued_to: transfer.to_issued_to,
+        to_incharge_name: transfer.to_incharge_name,
       },
     }, client);
 
@@ -161,14 +184,13 @@ export async function approveTransfer(id, approvedBy) {
 
     // Re-check asset availability
     const assetResult = await client.query(
-      `SELECT a.*, 
-        COALESCE(SUM(i.quantity) FILTER (WHERE i.status IN ('requested', 'active', 'dropped')), 0)::int as issued_quantity,
-        COALESCE(SUM(t.quantity) FILTER (WHERE t.status IN ('requested', 'approved') AND t.id != $2), 0)::int as transfer_quantity
+      `SELECT a.*,
+        (SELECT COALESCE(SUM(i.quantity), 0)::int FROM issues i
+         WHERE i.asset_id = a.id AND i.status IN ('requested', 'active', 'dropped')) as issued_quantity,
+        (SELECT COALESCE(SUM(t.quantity), 0)::int FROM transfers t
+         WHERE t.asset_id = a.id AND t.status IN ('requested', 'approved') AND t.id != $2) as transfer_quantity
        FROM assets a
-       LEFT JOIN issues i ON a.id = i.asset_id
-       LEFT JOIN transfers t ON a.id = t.asset_id
        WHERE a.id = $1
-       GROUP BY a.id
        FOR UPDATE OF a`,
       [transfer.asset_id, id]
     );
@@ -284,6 +306,14 @@ export async function completeTransfer(id, completedBy) {
     if (transfer.to_org_id) assetUpdates.owner_org_id = transfer.to_org_id;
     if (transfer.to_location_id) assetUpdates.location_id = transfer.to_location_id;
     if (transfer.to_user_id) assetUpdates.responsible_user_id = transfer.to_user_id;
+    if (transfer.to_issued_to) assetUpdates.issued_to = transfer.to_issued_to;
+    if (transfer.to_incharge_name) {
+      // A new person in-charge replaces the old contact number too
+      assetUpdates.incharge_name = transfer.to_incharge_name;
+      assetUpdates.incharge_phone = transfer.to_incharge_phone || null;
+    } else if (transfer.to_incharge_phone) {
+      assetUpdates.incharge_phone = transfer.to_incharge_phone;
+    }
 
     if (Object.keys(assetUpdates).length > 0) {
       const updateFields = Object.keys(assetUpdates).map((key, i) => `${key} = $${i + 2}`).join(', ');

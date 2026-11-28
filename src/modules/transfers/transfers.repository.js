@@ -8,8 +8,10 @@ export async function createTransfer(transferData, client = pool) {
   const query = `
     INSERT INTO transfers (
       asset_id, quantity, from_org_id, to_org_id, from_location_id, to_location_id,
-      from_user_id, to_user_id, reason, requested_by, status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'requested')
+      from_user_id, to_user_id, reason, requested_by,
+      from_issued_to, to_issued_to, from_incharge_name, to_incharge_name,
+      from_incharge_phone, to_incharge_phone, status
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'requested')
     RETURNING *
   `;
   
@@ -24,6 +26,12 @@ export async function createTransfer(transferData, client = pool) {
     transferData.to_user_id || null,
     transferData.reason,
     transferData.requested_by,
+    transferData.from_issued_to || null,
+    transferData.to_issued_to || null,
+    transferData.from_incharge_name || null,
+    transferData.to_incharge_name || null,
+    transferData.from_incharge_phone || null,
+    transferData.to_incharge_phone || null,
   ];
   
   const result = await client.query(query, values);
@@ -158,7 +166,8 @@ export async function updateTransfer(id, updateData, client = pool) {
     'quantity', 'from_org_id', 'to_org_id', 'from_location_id', 'to_location_id',
     'from_user_id', 'to_user_id', 'reason', 'status', 'approved_by', 'rejected_by',
     'completed_by', 'rejection_reason', 'cancellation_reason', 'approved_at',
-    'rejected_at', 'completed_at'
+    'rejected_at', 'completed_at',
+    'to_issued_to', 'to_incharge_name', 'to_incharge_phone'
   ];
   
   const entries = Object.entries(updateData).filter(([key]) => allowed.includes(key));
