@@ -4,8 +4,9 @@ export async function create(data) {
   const { rows } = await pool.query(
     `INSERT INTO purchases (purchase_order_no, vendor_id, org_unit_id, purchase_date, invoice_no, invoice_date, 
                            total_amount, tax_amount, shipping_cost, other_charges, grand_total, payment_status, 
-                           payment_method, payment_date, payment_reference, warranty_months, notes, purchased_by, approved_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+                           payment_method, payment_date, payment_reference, warranty_months, notes, purchased_by, approved_by,
+                           budget_type, budget_head)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
      RETURNING *`,
     [
       data.purchase_order_no,
@@ -26,7 +27,9 @@ export async function create(data) {
       data.warranty_months || 0,
       data.notes || null,
       data.purchased_by,
-      data.approved_by || null
+      data.approved_by || null,
+      data.budget_type || null,
+      data.budget_head || null
     ]
   );
   return rows[0];
@@ -71,6 +74,12 @@ export async function list(filters = {}) {
     paramCount++;
     conditions.push(`p.org_unit_id = ANY($${paramCount}::uuid[])`);
     values.push(filters.org_unit_ids);
+  }
+
+  if (filters.budget_type) {
+    paramCount++;
+    conditions.push(`p.budget_type = $${paramCount}`);
+    values.push(filters.budget_type);
   }
 
   if (filters.payment_status) {
@@ -124,7 +133,8 @@ export async function list(filters = {}) {
 export async function update(id, fields) {
   const allowed = ['purchase_order_no', 'vendor_id', 'org_unit_id', 'purchase_date', 'invoice_no', 'invoice_date',
                    'total_amount', 'tax_amount', 'shipping_cost', 'other_charges', 'grand_total', 'payment_status',
-                   'payment_method', 'payment_date', 'payment_reference', 'warranty_months', 'notes', 'approved_by'];
+                   'payment_method', 'payment_date', 'payment_reference', 'warranty_months', 'notes', 'approved_by',
+                   'budget_type', 'budget_head'];
   const entries = Object.entries(fields).filter(([key]) => allowed.includes(key));
   
   if (entries.length === 0) {

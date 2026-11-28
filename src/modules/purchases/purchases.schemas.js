@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BUDGET_TYPES } from '../../config/constants.js';
 
 export const createPurchaseSchema = z.object({
   purchase_order_no: z.string().trim().min(1, 'Purchase order number is required'),
@@ -19,6 +20,8 @@ export const createPurchaseSchema = z.object({
   warranty_months: z.number().int().min(0).default(0),
   notes: z.string().trim().optional(),
   approved_by: z.string().uuid().optional(),
+  budget_type: z.enum(BUDGET_TYPES).optional(),
+  budget_head: z.string().trim().optional(),
 });
 
 export const updatePurchaseSchema = z.object({
@@ -40,6 +43,8 @@ export const updatePurchaseSchema = z.object({
   warranty_months: z.number().int().min(0).optional(),
   notes: z.string().trim().nullable().optional(),
   approved_by: z.string().uuid().nullable().optional(),
+  budget_type: z.enum(BUDGET_TYPES).nullable().optional(),
+  budget_head: z.string().trim().nullable().optional(),
 });
 
 export const addPurchaseItemSchema = z.object({
@@ -75,6 +80,7 @@ export const listQuerySchema = z.object({
   vendor_id: z.string().uuid().optional(),
   org_unit_id: z.string().uuid().optional(),
   payment_status: z.enum(['pending', 'partial', 'paid']).optional(),
+  budget_type: z.enum(BUDGET_TYPES).optional(),
   from_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   search: z.string().optional(),

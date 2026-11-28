@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { assetsApi, categoriesApi } from '../api/client'
+import { assetsApi, categoriesApi, locationsApi } from '../api/client'
+import { BUDGET_TYPES, budgetTypeLabel } from '../constants'
 import { findCategoryNode, isAssetCategoryLeaf } from '../categoryTree'
 import CascadingCategoryPicker from '../components/CascadingCategoryPicker'
 import EmptyState from '../components/EmptyState'
@@ -28,6 +29,29 @@ const emptyForm = {
   serial_no: '',
   description: '',
   is_issuable: true,
+  location_id: '',
+  issued_to: '',
+  incharge_name: '',
+  incharge_phone: '',
+  invoice_no: '',
+  invoice_date: '',
+  budget_type: '',
+  budget_head: '',
+}
+
+const CUSTODY_FIELDS = [
+  'location_id', 'issued_to', 'incharge_name', 'incharge_phone',
+  'invoice_no', 'invoice_date', 'budget_type', 'budget_head',
+]
+
+function custodyPayload(form, emptyValue) {
+  return Object.fromEntries(
+    CUSTODY_FIELDS.map((key) => [key, String(form[key] ?? '').trim() || emptyValue])
+  )
+}
+
+function formatDate(value) {
+  return value ? String(value).slice(0, 10) : ''
 }
 
 export default function Assets() {
@@ -37,6 +61,7 @@ export default function Assets() {
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [categoryTree, setCategoryTree] = useState([])
+  const [locations, setLocations] = useState([])
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -83,6 +108,10 @@ export default function Assets() {
       .tree()
       .then((res) => setCategoryTree(res.data || []))
       .catch(() => setCategoryTree([]))
+    locationsApi
+      .list({ limit: 100 })
+      .then((res) => setLocations(res.data || []))
+      .catch(() => setLocations([]))
   }, [])
 
   function updateForm(key, value) {
@@ -112,6 +141,7 @@ export default function Assets() {
         serial_no: form.serial_no.trim() || undefined,
         description: form.description.trim() || undefined,
         is_issuable: form.is_issuable,
+        ...custodyPayload(form, undefined),
       })
       setShowCreate(false)
       setForm(emptyForm)
@@ -147,6 +177,7 @@ export default function Assets() {
         serial_no: form.serial_no.trim() || undefined,
         description: form.description.trim() || undefined,
         is_issuable: form.is_issuable,
+        ...custodyPayload(form, null),
       })
       setEditItem(null)
       await load()
@@ -212,6 +243,14 @@ export default function Assets() {
       serial_no: asset.serial_no || '',
       description: asset.description || '',
       is_issuable: asset.is_issuable !== false,
+      location_id: asset.location_id || '',
+      issued_to: asset.issued_to || '',
+      incharge_name: asset.incharge_name || '',
+      incharge_phone: asset.incharge_phone || '',
+      invoice_no: asset.invoice_no || '',
+      invoice_date: formatDate(asset.invoice_date),
+      budget_type: asset.budget_type || '',
+      budget_head: asset.budget_head || '',
     })
   }
 
@@ -271,7 +310,7 @@ export default function Assets() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <SkeletonTable rows={8} cols={6} />
+            <SkeletonTable rows={8} cols={7} />
           ) : items.length === 0 ? (
             <EmptyState
               icon="box"
@@ -284,6 +323,7 @@ export default function Assets() {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
+                  <th scope="col">Location / Issued to</th>
                   <th scope="col">Status</th>
                   <th scope="col">Condition</th>
                   <th scope="col">Qty</th>
@@ -307,6 +347,10 @@ export default function Assets() {
                           </span>
                         ) : null}
                       </div>
+                    </td>
+                    <td data-label="Location / Issued to">
+                      <div>{asset.location_name || <span className="muted">—</span>}</div>
+                      {asset.issued_to ? <div className="muted">{asset.issued_to}</div> : null}
                     </td>
                     <td data-label="Status">
                       <StatusBadge value={asset.status} meta={statusMeta(asset.status)} />
@@ -515,6 +559,88 @@ export default function Assets() {
                 />
               </div>
             </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="location_id">Location</label>
+                <select
+                  id="location_id"
+                  value={form.location_id}
+                  onChange={(e) => updateForm('location_id', e.target.value)}
+                >
+                  <option value="">Not set</option>
+                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="issued_to">Issued to</label>
+                <input
+                  id="issued_to"
+                  value={form.issued_to}
+                  onChange={(e) => updateForm('issued_to', e.target.value)}
+                  placeholder="Person, lab or department"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="incharge_name">Person in-charge</label>
+                <input
+                  id="incharge_name"
+                  value={form.incharge_name}
+                  onChange={(e) => updateForm('incharge_name', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="incharge_phone">In-charge phone no.</label>
+                <input
+                  id="incharge_phone"
+                  type="tel"
+                  value={form.incharge_phone}
+                  onChange={(e) => updateForm('incharge_phone', e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="budget_type">Budget type</label>
+                <select
+                  id="budget_type"
+                  value={form.budget_type}
+                  onChange={(e) => updateForm('budget_type', e.target.value)}
+                >
+                  <option value="">Not specified</option>
+                  {BUDGET_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="budget_head">Budget head / sponsor</label>
+                <input
+                  id="budget_head"
+                  value={form.budget_head}
+                  onChange={(e) => updateForm('budget_head', e.target.value)}
+                  placeholder="Project, grant, sponsor or donor"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="invoice_no">Invoice number</label>
+                <input
+                  id="invoice_no"
+                  value={form.invoice_no}
+                  onChange={(e) => updateForm('invoice_no', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="invoice_date">Invoice date</label>
+                <input
+                  id="invoice_date"
+                  type="date"
+                  value={form.invoice_date}
+                  onChange={(e) => updateForm('invoice_date', e.target.value)}
+                />
+              </div>
+            </div>
             <div className="field">
               <label htmlFor="description">Description</label>
               <textarea
@@ -540,6 +666,20 @@ export default function Assets() {
           <div className="form" style={{ gap: '0.65rem' }}>
             <div><strong>Category:</strong> {detailItem.category_path || detailItem.category_name || '—'}</div>
             <div><strong>Asset tag:</strong> {detailItem.asset_tag || '—'}</div>
+            <div><strong>Location:</strong> {detailItem.location_name || '—'}</div>
+            <div><strong>Issued to:</strong> {detailItem.issued_to || '—'}</div>
+            <div>
+              <strong>Person in-charge:</strong> {detailItem.incharge_name || '—'}
+              {detailItem.incharge_phone ? ` (${detailItem.incharge_phone})` : ''}
+            </div>
+            <div>
+              <strong>Budget:</strong> {detailItem.budget_type ? budgetTypeLabel(detailItem.budget_type) : '—'}
+              {detailItem.budget_head ? ` — ${detailItem.budget_head}` : ''}
+            </div>
+            <div>
+              <strong>Invoice:</strong> {detailItem.invoice_no || '—'}
+              {detailItem.invoice_date ? ` dated ${formatDate(detailItem.invoice_date)}` : ''}
+            </div>
             <div><strong>Status / Condition:</strong> {statusMeta(detailItem.status)?.label || detailItem.status} / {conditionMeta(detailItem.condition)?.label || detailItem.condition}</div>
             <div>
               <strong>Cost:</strong>{' '}

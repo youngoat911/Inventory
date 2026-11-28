@@ -7,6 +7,7 @@ import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { BUDGET_TYPES, budgetTypeLabel } from '../constants'
 
 const emptyForm = {
   purchase_order_no: '',
@@ -19,6 +20,10 @@ const emptyForm = {
   other_charges: 0,
   payment_status: 'pending',
   notes: '',
+  budget_type: '',
+  budget_head: '',
+  invoice_no: '',
+  invoice_date: '',
 }
 
 export default function Purchases() {
@@ -87,6 +92,10 @@ export default function Purchases() {
         other_charges: Number(form.other_charges) || 0,
         payment_status: form.payment_status,
         notes: form.notes.trim() || undefined,
+        budget_type: form.budget_type || undefined,
+        budget_head: form.budget_head.trim() || undefined,
+        invoice_no: form.invoice_no.trim() || undefined,
+        invoice_date: form.invoice_date || undefined,
       })
       setShowCreate(false)
       setForm(emptyForm)
@@ -207,6 +216,7 @@ export default function Purchases() {
                   <th scope="col">PO no.</th>
                   <th scope="col">Date</th>
                   <th scope="col">Amount</th>
+                  <th scope="col">Budget</th>
                   <th scope="col">Payment</th>
                   <th scope="col">Actions</th>
                 </tr>
@@ -220,6 +230,10 @@ export default function Purchases() {
                     </td>
                     <td className="muted" data-label="Date">{item.purchase_date}</td>
                     <td data-label="Amount">{item.grand_total ?? item.total_amount}</td>
+                    <td data-label="Budget">
+                      <div>{item.budget_type ? budgetTypeLabel(item.budget_type) : <span className="muted">—</span>}</div>
+                      {item.budget_head ? <div className="muted">{item.budget_head}</div> : null}
+                    </td>
                     <td data-label="Payment">
                       <StatusBadge value={item.payment_status} />
                     </td>
@@ -326,6 +340,47 @@ export default function Purchases() {
                   value={form.total_amount}
                   onChange={(e) => setForm((p) => ({ ...p, total_amount: e.target.value }))}
                   required
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="budget_type">Budget type</label>
+                <select
+                  id="budget_type"
+                  value={form.budget_type}
+                  onChange={(e) => setForm((p) => ({ ...p, budget_type: e.target.value }))}
+                >
+                  <option value="">Not specified</option>
+                  {BUDGET_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="budget_head">Budget head / sponsor</label>
+                <input
+                  id="budget_head"
+                  value={form.budget_head}
+                  onChange={(e) => setForm((p) => ({ ...p, budget_head: e.target.value }))}
+                  placeholder="Project, grant, sponsor or donor"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="invoice_no">Invoice number</label>
+                <input
+                  id="invoice_no"
+                  value={form.invoice_no}
+                  onChange={(e) => setForm((p) => ({ ...p, invoice_no: e.target.value }))}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="invoice_date">Invoice date</label>
+                <input
+                  id="invoice_date"
+                  type="date"
+                  value={form.invoice_date}
+                  onChange={(e) => setForm((p) => ({ ...p, invoice_date: e.target.value }))}
                 />
               </div>
             </div>

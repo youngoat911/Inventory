@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BUDGET_TYPES } from '../../config/constants.js';
 
 // Status and condition values are validated against the admin-managed
 // asset_status_master table in the service layer.
@@ -30,6 +31,13 @@ export const createAssetSchema = z.object({
   purchase_id: z.string().uuid('Invalid purchase ID').optional(),
   warranty_until: z.string().date('Invalid warranty date (use YYYY-MM-DD format)').optional(),
   is_institute_asset: z.boolean().default(true),
+  issued_to: z.string().trim().max(255).optional(),
+  incharge_name: z.string().trim().max(255).optional(),
+  incharge_phone: z.string().trim().max(30).optional(),
+  invoice_no: z.string().trim().max(100).optional(),
+  invoice_date: z.string().date('Invalid invoice date (use YYYY-MM-DD format)').optional(),
+  budget_type: z.enum(BUDGET_TYPES).optional(),
+  budget_head: z.string().trim().max(255).optional(),
 });
 
 export const updateAssetSchema = z.object({
@@ -56,6 +64,13 @@ export const updateAssetSchema = z.object({
   purchase_id: z.string().uuid().nullable().optional(),
   warranty_until: z.string().date().nullable().optional(),
   is_institute_asset: z.boolean().optional(),
+  issued_to: z.string().trim().max(255).nullable().optional(),
+  incharge_name: z.string().trim().max(255).nullable().optional(),
+  incharge_phone: z.string().trim().max(30).nullable().optional(),
+  invoice_no: z.string().trim().max(100).nullable().optional(),
+  invoice_date: z.string().date().nullable().optional(),
+  budget_type: z.enum(BUDGET_TYPES).nullable().optional(),
+  budget_head: z.string().trim().max(255).nullable().optional(),
 });
 
 export const batchCreateSchema = z.object({
@@ -84,6 +99,7 @@ export const listQuerySchema = z.object({
   is_issuable: z.coerce.boolean().optional(),
   is_institute_asset: z.coerce.boolean().optional(),
   low_stock: z.coerce.boolean().optional(),
+  budget_type: z.enum(BUDGET_TYPES).optional(),
   sort: z.string().optional(),
 });
 
@@ -100,4 +116,5 @@ export const exportQuerySchema = z.object({
   is_issuable: z.coerce.boolean().optional(),
   is_institute_asset: z.coerce.boolean().optional(),
   low_stock: z.coerce.boolean().optional(),
+  budget_type: z.enum(BUDGET_TYPES).optional(),
 });

@@ -6,6 +6,16 @@ import { assertValid as assertValidStatus } from '../status-master/status-master
 import { stringify } from 'csv-stringify/sync';
 import { getDepreciation, getEffectiveDepRate, getFinancialYearEndYear } from '../../shared/depreciation.js';
 
+function formatDate(value) {
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return String(value).slice(0, 10);
+}
+
 function enrichAssetDepreciation(asset) {
   if (!asset) return asset;
   const effectiveRate = getEffectiveDepRate(asset);
@@ -114,44 +124,7 @@ export async function batchCreate(assetsData) {
           throw new Error('Individual tracked assets must have quantity of 1');
         }
 
-        // Insert asset
-        const { rows } = await client.query(
-          `INSERT INTO assets (
-            asset_tag, name, description, category_id, tracking, quantity,
-            low_stock_threshold, unit_cost, cost, capitalization_date, serial_no, brand_model, condition,
-            status, owner_org_id, home_berm_id, location_id, responsible_user_id,
-            is_issuable, loan_days_override, purchase_id, warranty_until, is_institute_asset
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
-          RETURNING *`,
-          [
-            assetData.asset_tag || null,
-            assetData.name,
-            assetData.description || null,
-            assetData.category_id,
-            assetData.tracking,
-            assetData.quantity,
-            assetData.low_stock_threshold,
-            assetData.unit_cost || null,
-            assetData.cost ?? null,
-            assetData.capitalization_date || null,
-            assetData.serial_no || null,
-            assetData.brand_model || null,
-            assetData.condition,
-            assetData.status,
-            assetData.owner_org_id || null,
-            assetData.home_berm_id || null,
-            assetData.location_id || null,
-            assetData.responsible_user_id || null,
-            assetData.is_issuable,
-            assetData.loan_days_override || null,
-            assetData.purchase_id || null,
-            assetData.warranty_until || null,
-            assetData.is_institute_asset
-          ]
-        );
-        
-        created.push(rows[0]);
+        created.push(await repository.create(assetData, client));
       } catch (error) {
         errors.push({
           index: i,
@@ -320,6 +293,15 @@ export async function exportAssets(filters) {
       'Loan Days Override': asset.loan_days_override || '',
       'Warranty Until': asset.warranty_until || '',
       'Is Institute Asset': asset.is_institute_asset ? 'Yes' : 'No',
+      'Issued To': asset.issued_to || '',
+      'Person In-charge': asset.incharge_name || '',
+      'In-charge Phone': asset.incharge_phone || '',
+      'Invoice No': asset.invoice_no || '',
+      'Invoice Date': asset.invoice_date ? formatDate(asset.invoice_date) : '',
+      'Budget Type': asset.budget_type || '',
+      'Budget Head': asset.budget_head || '',
+      'Cost': asset.cost ?? '',
+      'Capitalization Date': asset.capitalization_date ? formatDate(asset.capitalization_date) : '',
       'Created At': asset.created_at,
       'Updated At': asset.updated_at,
     }));

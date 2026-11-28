@@ -1,40 +1,34 @@
 import { pool } from '../../db/pool.js';
 
-export async function create(data) {
-  const { rows } = await pool.query(
-    `INSERT INTO assets (
-      asset_tag, name, description, category_id, tracking, quantity,
-      low_stock_threshold, unit_cost, cost, capitalization_date, serial_no, brand_model, condition,
-      status, owner_org_id, home_berm_id, location_id, responsible_user_id,
-      is_issuable, loan_days_override, purchase_id, warranty_until, is_institute_asset
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
-    RETURNING *`,
-    [
-      data.asset_tag || null,
-      data.name,
-      data.description || null,
-      data.category_id,
-      data.tracking,
-      data.quantity,
-      data.low_stock_threshold,
-      data.unit_cost || null,
-      data.cost ?? null,
-      data.capitalization_date || null,
-      data.serial_no || null,
-      data.brand_model || null,
-      data.condition,
-      data.status,
-      data.owner_org_id || null,
-      data.home_berm_id || null,
-      data.location_id || null,
-      data.responsible_user_id || null,
-      data.is_issuable,
-      data.loan_days_override || null,
-      data.purchase_id || null,
-      data.warranty_until || null,
-      data.is_institute_asset
-    ]
+// Writable asset columns, in insert order. Shared by create, batch create and update.
+export const ASSET_COLUMNS = [
+  'asset_tag', 'name', 'description', 'category_id', 'tracking', 'quantity',
+  'low_stock_threshold', 'unit_cost', 'cost', 'capitalization_date', 'serial_no', 'brand_model', 'condition',
+  'status', 'owner_org_id', 'home_berm_id', 'location_id', 'responsible_user_id',
+  'is_issuable', 'loan_days_override', 'purchase_id', 'warranty_until', 'is_institute_asset',
+  'issued_to', 'incharge_name', 'incharge_phone', 'invoice_no', 'invoice_date', 'budget_type', 'budget_head',
+];
+
+// Columns whose empty values ('' / 0 / undefined) are stored as NULL
+const NULL_IF_FALSY = new Set([
+  'asset_tag', 'description', 'unit_cost', 'capitalization_date', 'serial_no', 'brand_model',
+  'owner_org_id', 'home_berm_id', 'location_id', 'responsible_user_id', 'loan_days_override',
+  'purchase_id', 'warranty_until', 'issued_to', 'incharge_name', 'incharge_phone', 'invoice_no',
+  'invoice_date', 'budget_type', 'budget_head',
+]);
+
+export async function create(data, client = pool) {
+  const values = ASSET_COLUMNS.map((col) => {
+    if (col === 'cost') return data.cost ?? null;
+    if (NULL_IF_FALSY.has(col)) return data[col] || null;
+    return data[col];
+  });
+  const placeholders = ASSET_COLUMNS.map((_, i) => `$${i + 1}`);
+  const { rows } = await client.query(
+    `INSERT INTO assets (${ASSET_COLUMNS.join(', ')})
+     VALUES (${placeholders.join(', ')})
+     RETURNING *`,
+    values
   );
   return rows[0];
 }
@@ -87,7 +81,10 @@ export async function list(filters = {}) {
       a.name ILIKE $${paramCount} OR 
       a.description ILIKE $${paramCount} OR 
       a.asset_tag ILIKE $${paramCount} OR
-      a.serial_no ILIKE $${paramCount}
+      a.serial_no ILIKE $${paramCount} OR
+      a.issued_to ILIKE $${paramCount} OR
+      a.incharge_name ILIKE $${paramCount} OR
+      a.invoice_no ILIKE $${paramCount}
     )`);
     values.push(`%${filters.q}%`);
   }
@@ -165,6 +162,12 @@ export async function list(filters = {}) {
     conditions.push(`a.quantity <= a.low_stock_threshold`);
   }
 
+  if (filters.budget_type) {
+    paramCount++;
+    conditions.push(`a.budget_type = $${paramCount}`);
+    values.push(filters.budget_type);
+  }
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Sorting
@@ -213,13 +216,7 @@ export async function list(filters = {}) {
 }
 
 export async function update(id, fields) {
-  const allowed = [
-    'asset_tag', 'name', 'description', 'category_id', 'tracking', 'quantity',
-    'low_stock_threshold', 'unit_cost', 'cost', 'capitalization_date', 'serial_no', 'brand_model', 'condition',
-    'status', 'owner_org_id', 'home_berm_id', 'location_id', 'responsible_user_id',
-    'is_issuable', 'loan_days_override', 'purchase_id', 'warranty_until', 'is_institute_asset'
-  ];
-  const entries = Object.entries(fields).filter(([key]) => allowed.includes(key));
+  const entries = Object.entries(fields).filter(([key]) => ASSET_COLUMNS.includes(key));
   
   if (entries.length === 0) {
     return getById(id);
@@ -296,7 +293,10 @@ export async function exportAssets(filters = {}) {
       a.name ILIKE $${paramCount} OR 
       a.description ILIKE $${paramCount} OR 
       a.asset_tag ILIKE $${paramCount} OR
-      a.serial_no ILIKE $${paramCount}
+      a.serial_no ILIKE $${paramCount} OR
+      a.issued_to ILIKE $${paramCount} OR
+      a.incharge_name ILIKE $${paramCount} OR
+      a.invoice_no ILIKE $${paramCount}
     )`);
     values.push(`%${filters.q}%`);
   }
@@ -362,6 +362,12 @@ export async function exportAssets(filters = {}) {
 
   if (filters.low_stock === true) {
     conditions.push(`a.quantity <= a.low_stock_threshold`);
+  }
+
+  if (filters.budget_type) {
+    paramCount++;
+    conditions.push(`a.budget_type = $${paramCount}`);
+    values.push(filters.budget_type);
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
