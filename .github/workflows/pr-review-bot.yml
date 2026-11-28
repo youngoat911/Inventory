@@ -10,7 +10,6 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  models: read # free GitHub Models access via GITHUB_TOKEN
 
 concurrency:
   group: ai-review-${{ github.event.pull_request.number }}
@@ -27,7 +26,7 @@ jobs:
       PR: ${{ github.event.pull_request.number }}
       PR_TITLE: ${{ github.event.pull_request.title }}
       PR_BODY: ${{ github.event.pull_request.body }}
-      MODEL: openai/gpt-4.1-mini
+      MODEL: gemini-flash-latest # free Gemini tier; see aistudio.google.com for other model names
       MAX_DIFF_BYTES: "60000"
 
     steps:
@@ -62,6 +61,8 @@ jobs:
 
       - name: Ask AI for a review
         if: env.EMPTY != 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           SYSTEM_PROMPT='You are youngoatBot, a senior reviewer for a Node.js (Express 5, ES modules, PostgreSQL with node-pg-migrate, Vitest) backend and a React 19 + Vite frontend.
           Review ONLY the diff you are given. Focus on, in order:
@@ -91,18 +92,18 @@ jobs:
           echo "Request size: $(wc -c < request.json) bytes"
 
           HTTP=$(curl -sS -o response.json -w '%{http_code}' \
-            https://models.github.ai/inference/chat/completions \
+            https://generativelanguage.googleapis.com/v1beta/openai/chat/completions \
             -H "Accept: application/json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Authorization: Bearer $GEMINI_API_KEY" \
             -H "Content-Type: application/json" \
             -d @request.json) || HTTP="curl-failed"
 
-          echo "GitHub Models HTTP status: $HTTP"
+          echo "Gemini HTTP status: $HTTP"
 
           if [ "$HTTP" = "200" ] && jq -e '.choices[0].message.content' response.json > /dev/null 2>&1; then
             jq -r '.choices[0].message.content' response.json > review.md
           else
-            echo "::warning::GitHub Models did not return a review (HTTP $HTTP)"
+            echo "::warning::Gemini did not return a review (HTTP $HTTP)"
             echo "----- response (first 1000 bytes) -----"
             head -c 1000 response.json 2>/dev/null || true
             echo
