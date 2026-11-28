@@ -1,6 +1,6 @@
 # Gymkhana Inventory
 
-BERM equipment inventory management system featuring a modular REST API backend and a responsive React web interface for managing assets, borrowing workflows, transfers, audits, and real-time alerts.
+BERM equipment inventory management system featuring a modular REST API backend and a responsive React web interface for managing assets, custody hand-overs, transfers, audits, and real-time alerts.
 
 ## Architecture & Directory Structure
 
@@ -34,12 +34,12 @@ Inventory/
 │       ├── assets/                      # Asset catalog, barcodes, lifecycle, tracking
 │       ├── audit-log/                   # Immutable audit logging for security compliance
 │       ├── auth/                        # Registration, login, password reset & PASETO tokens
-│       ├── blocks/                      # Borrower blocks & restrictions
-│       ├── borrower-blocks/             # Borrower blocks (retained for compatibility)
+│       ├── blocks/                      # Borrower blocks (loans removed; not mounted)
+│       ├── borrower-blocks/             # Borrower blocks (loans removed; not mounted)
 │       ├── categories/                  # 4-level hierarchical asset classification (19 fixed Level 1 + L2–L4 sub-categories)
 │       ├── disposals/                   # Asset disposal requests and approvals
-│       ├── drop-boxes/                  # Physical return drop box endpoints
-│       ├── issues/                      # Asset checkouts, returns, renewals & loan lifecycle
+│       ├── drop-boxes/                  # Return drop boxes (loans removed; not mounted)
+│       ├── issues/                      # Former loan lifecycle (loans removed; not mounted)
 │       ├── locations/                   # Physical storage & warehouse locations
 │       ├── maintenance/                 # Asset maintenance tracking
 │       ├── org-units/                   # Campus/organization units & departments
@@ -47,7 +47,8 @@ Inventory/
 │       ├── purchases/                   # Asset acquisition records & vendor purchases
 │       ├── reports/                     # Utilization, overdue loans & cost analytics
 │       ├── roles/                       # System RBAC roles & user assignments
-│       ├── transfers/                   # Custody transfers between organization units
+│       ├── status-master/               # Admin-managed asset statuses & conditions
+│       ├── transfers/                   # Transfers between org units, locations & persons in-charge
 │       ├── users/                       # User management & account statuses
 │       ├── verifications/               # Inventory verification cycles
 │       └── vendors/                     # Supplier & vendor directories
@@ -208,19 +209,16 @@ npm run start:prod
 
 | Page | Route | Description |
 |------|-------|-------------|
-| **Dashboard** | `/` | System overview, inventory metrics, overdue loans, open alerts, and quick actions. |
-| **Catalog** | `/catalog` | Expandable 4-level asset classification tree (19 fixed Level 1 categories + super-admin-managed Levels 2–4), storage locations, organization units, and drop boxes. |
-| **Assets** | `/assets` | Search, filter, add, edit, track, and export physical equipment. |
-| **Issues & Loans** | `/issues` | Issue equipment, check-in returns, renew active loans, or report lost items. |
-| **Transfers** | `/transfers` | Transfer asset custody between different departments or units. |
+| **Dashboard** | `/` | System overview, inventory metrics, recently updated items, open alerts, and quick actions. |
+| **Catalog** | `/catalog` | Expandable classification tree — Broad category group (19 fixed) → Main category → Sub category → Item master — plus storage locations, organization units, and the status master (asset statuses & conditions). |
+| **Assets** | `/assets` | Search, filter, add, edit and export items with auto-generated unique numbers, location, issued-to, person in-charge, invoice and budget details. Drag-and-drop CSV import. |
+| **Transfers** | `/transfers` | Move items between departments/locations or hand them over to a new issued-to party and person in-charge. |
 | **Disposals** | `/disposals` | Submit and review asset disposal requests. |
 | **Maintenance** | `/maintenance` | Track and resolve asset maintenance. |
 | **Alerts** | `/alerts` | View, filter, acknowledge, and resolve low-stock and overdue alerts. |
 | **Notifications** | `/notifications` | View notifications and mark them as read. |
-| **Purchases** | `/purchases` | Record vendor equipment orders and restocks. |
+| **Purchases** | `/purchases` | Record vendor equipment orders with invoice and budget type (Institute / R&D / Sponsored / Donation). |
 | **Vendors** | `/vendors` | Supplier directory and contact records. |
-| **Drop Boxes** | `/drop-boxes` | Manage physical unassisted drop box collection locations. |
-| **Borrower Blocks** | `/blocks` | Block or unblock users with overdue items from borrowing. |
 | **Verifications** | `/verifications` | Create and manage inventory verification cycles. |
 | **Users** | `/users` | User administration and active account statuses. |
 | **Audit Log** | `/audit-log` | Immutable compliance log of all database entity mutations. |
