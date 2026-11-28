@@ -62,7 +62,7 @@ try {
        id, name, parent_id, level, code, is_system, is_legacy, sort_order,
        default_low_stock_threshold, default_loan_days, max_renewals
      )
-     VALUES ($1, $2, 2, '01', false, false, 1, 2, 7, 1)
+     VALUES ($1, 'General Equipment', $2, 2, '01', false, false, 1, 2, 7, 1)
      ON CONFLICT (id) DO NOTHING`,
     [ids.category, ids.level1PlantAndMachinery]
   );
