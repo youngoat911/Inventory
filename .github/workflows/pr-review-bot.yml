@@ -135,19 +135,19 @@ jobs:
           MARKER='<!-- youngoatbot-review -->'
           {
             echo "$MARKER"
-            echo "## youngoatBot Code Review"
+            echo "## Code review by youngoatBot"
             echo
             cat review.md
             echo
             if [ "${TRUNCATED:-}" = "true" ]; then
               echo "> Note: the diff was large, so only the first ${MAX_DIFF_BYTES} bytes were reviewed."
             fi
-            echo "<sub>Model: \`${USED_MODEL:-none}\` · commit $HEAD_SHA · AI suggestions can be wrong, verify before applying.</sub>"
+            echo "<sub>Commit $HEAD_SHA</sub>"
           } > comment.md
 
           # Update youngoatBot's earlier comment instead of adding a new one each push
           COMMENT_ID=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
-            --jq ".[] | select(.user.login == \"$BOT_LOGIN\" and (.body | contains(\"$MARKER\"))) | .id" | head -n1)
+            --jq ".[] | select(.user.login == \"$BOT_LOGIN\" andecho "<sub>Model: \`${USED_MODEL:-none}\` · commit $HEAD_SHA · AI suggestions can be wrong, verify before applying.</sub>" (.body | contains(\"$MARKER\"))) | .id" | head -n1)
 
           if [ -n "$COMMENT_ID" ]; then
             gh api -X PATCH "repos/$REPO/issues/comments/$COMMENT_ID" -F body=@comment.md > /dev/null
