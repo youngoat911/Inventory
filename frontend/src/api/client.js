@@ -302,3 +302,12 @@ export const auditLogApi = {
   get: (id) => api(`/audit-log/${id}`),
   byEntity: (entityType, entityId) => api(`/audit-log/entity/${entityType}/${entityId}`),
 }
+
+export const statusMasterApi = {
+  list: (kind, params = {}) => api(`/status-master/${kind}${qs(params)}`),
+  create: (kind, body) => api(`/status-master/${kind}`, { method: 'POST', body }),
+  update: (kind, code, body) =>
+    api(`/status-master/${kind}/${encodeURIComponent(code)}`, { method: 'PATCH', body }),
+  remove: (kind, code) =>
+    api(`/status-master/${kind}/${encodeURIComponent(code)}`, { method: 'DELETE' }),
+}

@@ -8,11 +8,13 @@ import Modal from '../components/Modal'
 import { SkeletonTable } from '../components/Skeleton'
 import { usePageTitle } from '../hooks/usePageTitle'
 import DropBoxes from './DropBoxes'
+import StatusMasterPanel from '../components/StatusMasterPanel'
 
 const tabs = [
   { id: 'categories', label: 'Categories' },
   { id: 'locations', label: 'Locations' },
   { id: 'orgs', label: 'Org units' },
+  { id: 'statuses', label: 'Status master' },
   { id: 'drop-boxes', label: 'Drop boxes' },
 ]
 
@@ -43,7 +45,7 @@ export default function Catalog() {
   const [form, setForm] = useState({})
 
   const load = useCallback(async () => {
-    if (tab === 'drop-boxes') {
+    if (tab === 'drop-boxes' || tab === 'statuses') {
       setLoading(false)
       return
     }
@@ -363,7 +365,7 @@ export default function Catalog() {
       ) : null}
     </>
   )
-  const canManageTab = tab === 'drop-boxes' ? false : tab === 'locations' ? isAdmin : isSuperAdmin
+  const canManageTab = tab === 'drop-boxes' || tab === 'statuses' ? false : tab === 'locations' ? isAdmin : isSuperAdmin
   const visibleCategoryRows = tab === 'categories' ? flattenCategoryTree(items, expandedIds) : []
 
   return (
@@ -371,7 +373,7 @@ export default function Catalog() {
       <div className="page-header">
         <div>
           <h1>Catalog</h1>
-          <p>4-level asset classification, locations, organization units, and return drop boxes.</p>
+          <p>4-level asset classification, locations, organization units, status master, and return drop boxes.</p>
         </div>
         {tab === 'categories' ? (
           <div className="row-actions">
@@ -413,7 +415,7 @@ export default function Catalog() {
         ))}
       </div>
 
-      {tab === 'drop-boxes' ? <DropBoxes embedded /> : <div className="panel">
+      {tab === 'statuses' ? <StatusMasterPanel /> : tab === 'drop-boxes' ? <DropBoxes embedded /> : <div className="panel">
         <div className="table-wrap">
           {loading ? (
             <SkeletonTable rows={6} cols={5} />

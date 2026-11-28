@@ -20,6 +20,7 @@ import rolesRouter from '../modules/roles/roles.routes.js';
 import disposalsRouter from '../modules/disposals/disposals.routes.js';
 import maintenanceRouter from '../modules/maintenance/maintenance.routes.js';
 import notificationsRouter from '../modules/notifications/notifications.routes.js';
+import statusMasterRouter from '../modules/status-master/status-master.routes.js';
 import verificationsRouter from '../modules/verifications/verifications.routes.js';
 
 const router = express.Router();
@@ -50,6 +51,7 @@ router.use('/maintenance', authenticate, maintenanceRouter);
 router.use('/notifications', authenticate, notificationsRouter);
 router.use('/verifications', authenticate, verificationsRouter);
 router.use('/roles', authenticate, rolesRouter);
+router.use('/status-master', authenticate, statusMasterRouter);
 router.use('/', authenticate, reportsRouter);
 
 export default router;

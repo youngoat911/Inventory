@@ -2,6 +2,7 @@ import * as repository from './assets.repository.js';
 import * as qrService from '../../shared/qr-token.service.js';
 import { AppError } from '../../shared/app-error.js';
 import { withTransaction } from '../../db/transaction.js';
+import { assertValid as assertValidStatus } from '../status-master/status-master.service.js';
 import { stringify } from 'csv-stringify/sync';
 import { getDepreciation, getEffectiveDepRate, getFinancialYearEndYear } from '../../shared/depreciation.js';
 
@@ -48,6 +49,7 @@ async function validateAssetCategory(categoryId, client) {
 export async function create(data) {
   // Validate category is an active leaf (Level 2-4)
   await validateAssetCategory(data.category_id);
+  await assertValidStatus(data);
 
   // Validate unique constraints
   if (data.asset_tag) {
@@ -84,6 +86,7 @@ export async function batchCreate(assetsData) {
       try {
         // Validate category is an active leaf (Level 2-4)
         await validateAssetCategory(assetData.category_id, client);
+        await assertValidStatus(assetData, {}, client);
 
         // Validate unique constraints
         if (assetData.asset_tag) {
@@ -205,6 +208,7 @@ export async function update(id, data) {
   if (data.category_id && data.category_id !== existing.category_id) {
     await validateAssetCategory(data.category_id);
   }
+  await assertValidStatus(data, existing);
 
   // Validate unique constraints if updating
   if (data.asset_tag && data.asset_tag !== existing.asset_tag) {

@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+// Status and condition values are validated against the admin-managed
+// asset_status_master table in the service layer.
+const masterCode = z.string().trim().regex(/^[a-z][a-z0-9_]{0,49}$/, 'Invalid code');
+
 export const createAssetSchema = z.object({
   asset_tag: z.string().trim().optional(),
   name: z.string().trim().min(1, 'Name is required').max(255),
@@ -15,12 +19,8 @@ export const createAssetSchema = z.object({
   capitalization_date: z.string().date('Invalid capitalization date (use YYYY-MM-DD format)').optional(),
   serial_no: z.string().trim().optional(),
   brand_model: z.string().trim().optional(),
-  condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged', 'under_repair'], {
-    errorMap: () => ({ message: 'Invalid condition value' })
-  }),
-  status: z.enum(['available', 'issued', 'in_maintenance', 'disposed', 'lost', 'reserved'], {
-    errorMap: () => ({ message: 'Invalid status value' })
-  }),
+  condition: masterCode,
+  status: masterCode,
   owner_org_id: z.string().uuid('Invalid owner organization ID').optional(),
   home_berm_id: z.string().uuid('Invalid BERM ID').optional(),
   location_id: z.string().uuid('Invalid location ID').optional(),
@@ -45,8 +45,8 @@ export const updateAssetSchema = z.object({
   capitalization_date: z.string().date().nullable().optional(),
   serial_no: z.string().trim().nullable().optional(),
   brand_model: z.string().trim().optional(),
-  condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged', 'under_repair']).optional(),
-  status: z.enum(['available', 'issued', 'in_maintenance', 'disposed', 'lost', 'reserved']).optional(),
+  condition: masterCode.optional(),
+  status: masterCode.optional(),
   owner_org_id: z.string().uuid().nullable().optional(),
   home_berm_id: z.string().uuid().nullable().optional(),
   location_id: z.string().uuid().nullable().optional(),
@@ -74,8 +74,8 @@ export const listQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
   q: z.string().trim().optional(),
-  status: z.enum(['available', 'issued', 'in_maintenance', 'disposed', 'lost', 'reserved']).optional(),
-  condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged', 'under_repair']).optional(),
+  status: masterCode.optional(),
+  condition: masterCode.optional(),
   tracking: z.enum(['individual', 'quantity']).optional(),
   category_id: z.string().uuid().optional(),
   owner_org_id: z.string().uuid().optional(),
@@ -90,8 +90,8 @@ export const listQuerySchema = z.object({
 export const exportQuerySchema = z.object({
   format: z.enum(['json', 'csv']).default('json'),
   q: z.string().trim().optional(),
-  status: z.enum(['available', 'issued', 'in_maintenance', 'disposed', 'lost', 'reserved']).optional(),
-  condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged', 'under_repair']).optional(),
+  status: masterCode.optional(),
+  condition: masterCode.optional(),
   tracking: z.enum(['individual', 'quantity']).optional(),
   category_id: z.string().uuid().optional(),
   owner_org_id: z.string().uuid().optional(),

@@ -10,6 +10,7 @@ import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { useStatusMaster } from '../hooks/useStatusMaster'
 
 const SMALL_VALUE_ASSET_LIMIT = 2000
 
@@ -32,6 +33,7 @@ const emptyForm = {
 export default function Assets() {
   usePageTitle('Assets')
   const { isAdmin } = useAuth()
+  const { statuses, conditions, statusMeta, conditionMeta } = useStatusMaster()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [categoryTree, setCategoryTree] = useState([])
@@ -253,12 +255,7 @@ export default function Assets() {
           }}
         >
           <option value="">All statuses</option>
-          <option value="available">Available</option>
-          <option value="issued">Issued</option>
-          <option value="in_maintenance">In maintenance</option>
-          <option value="reserved">Reserved</option>
-          <option value="disposed">Disposed</option>
-          <option value="lost">Lost</option>
+          {statuses.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
         </select>
         <CascadingCategoryPicker
           tree={categoryTree}
@@ -312,10 +309,10 @@ export default function Assets() {
                       </div>
                     </td>
                     <td data-label="Status">
-                      <StatusBadge value={asset.status} />
+                      <StatusBadge value={asset.status} meta={statusMeta(asset.status)} />
                     </td>
                     <td data-label="Condition">
-                      <StatusBadge value={asset.condition} />
+                      <StatusBadge value={asset.condition} meta={conditionMeta(asset.condition)} />
                     </td>
                     <td data-label="Qty">{asset.quantity}</td>
                     <td className="muted" data-label="Tracking">{asset.tracking}</td>
@@ -484,12 +481,8 @@ export default function Assets() {
                   value={form.condition}
                   onChange={(e) => updateForm('condition', e.target.value)}
                 >
-                  <option value="excellent">Excellent</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                  <option value="poor">Poor</option>
-                  <option value="damaged">Damaged</option>
-                  <option value="under_repair">Under repair</option>
+                  {conditions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                  {form.condition && !conditionMeta(form.condition) ? <option value={form.condition}>{form.condition}</option> : null}
                 </select>
               </div>
               <div className="field">
@@ -499,12 +492,8 @@ export default function Assets() {
                   value={form.status}
                   onChange={(e) => updateForm('status', e.target.value)}
                 >
-                  <option value="available">Available</option>
-                  <option value="reserved">Reserved</option>
-                  <option value="issued">Issued</option>
-                  <option value="in_maintenance">In maintenance</option>
-                  <option value="disposed">Disposed</option>
-                  <option value="lost">Lost</option>
+                  {statuses.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
+                  {form.status && !statusMeta(form.status) ? <option value={form.status}>{form.status}</option> : null}
                 </select>
               </div>
             </div>
@@ -551,7 +540,7 @@ export default function Assets() {
           <div className="form" style={{ gap: '0.65rem' }}>
             <div><strong>Category:</strong> {detailItem.category_path || detailItem.category_name || '—'}</div>
             <div><strong>Asset tag:</strong> {detailItem.asset_tag || '—'}</div>
-            <div><strong>Status / Condition:</strong> {detailItem.status} / {detailItem.condition}</div>
+            <div><strong>Status / Condition:</strong> {statusMeta(detailItem.status)?.label || detailItem.status} / {conditionMeta(detailItem.condition)?.label || detailItem.condition}</div>
             <div>
               <strong>Cost:</strong>{' '}
               {detailItem.cost != null ? `₹${Number(detailItem.cost).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}

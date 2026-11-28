@@ -31,11 +31,11 @@ const STATUS_CONFIG = {
   damaged:        { color: 'danger',  dot: false },
 }
 
-export default function StatusBadge({ value }) {
+export default function StatusBadge({ value, meta }) {
   if (!value) return <span className="muted">—</span>
   const key = String(value).toLowerCase().replace(/[\s-]+/g, '_')
-  const cfg = STATUS_CONFIG[key] || {}
-  const label = String(value).replace(/_/g, ' ')
+  const cfg = meta?.color ? { ...STATUS_CONFIG[key], color: meta.color } : STATUS_CONFIG[key] || {}
+  const label = meta?.label || String(value).replace(/_/g, ' ')
   return (
     <span className={`badge badge-${cfg.color || 'neutral'}`} data-status={key}>
       {cfg.dot && <span className="badge-dot" aria-hidden="true" />}
