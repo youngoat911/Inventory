@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { categoriesApi, locationsApi, orgUnitsApi } from '../api/client'
-import { flattenCategoryTree } from '../categoryTree'
+import { flattenCategoryTree, levelName } from '../categoryTree'
 import { useAuth } from '../auth/AuthContext'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
@@ -221,7 +221,7 @@ export default function Catalog() {
             <div className="field">
               <label>Parent category</label>
               <div className="muted" style={{ padding: '0.35rem 0' }}>
-                {createParent.full_path || createParent.name} (Level {createParent.level})
+                {createParent.full_path || createParent.name} ({levelName(createParent.level)})
               </div>
             </div>
           ) : null}
@@ -373,7 +373,7 @@ export default function Catalog() {
       <div className="page-header">
         <div>
           <h1>Catalog</h1>
-          <p>4-level asset classification, locations, organization units, status master, and return drop boxes.</p>
+          <p>Broad category group → main category → sub category → item master, locations, organization units, status master, and return drop boxes.</p>
         </div>
         {tab === 'categories' ? (
           <div className="row-actions">
@@ -473,7 +473,7 @@ export default function Catalog() {
                         {item.is_legacy ? (
                           <span className="muted">Legacy</span>
                         ) : (
-                          <span className="badge">L{item.level}</span>
+                          <span className="badge" title={`Level ${item.level}`}>{levelName(item.level)}</span>
                         )}
                       </td>
                       <td data-label="Dep. rate">
@@ -486,7 +486,7 @@ export default function Catalog() {
                               : `${item.effective_dep_rate_percent}%`}
                           </span>
                         ) : (
-                          <span className="muted" title="Inherited from Level 1">
+                          <span className="muted" title="Inherited from the broad category group">
                             {item.effective_dep_rate_percent}% (inherited)
                           </span>
                         )}
@@ -509,7 +509,7 @@ export default function Catalog() {
                                   type="button"
                                   className="btn btn-ghost btn-sm"
                                   disabled={item.level >= 4}
-                                  title={item.level >= 4 ? 'Maximum depth (Level 4) reached' : undefined}
+                                  title={item.level >= 4 ? 'Item master is the last level' : undefined}
                                   onClick={() => openCreate(item)}
                                 >
                                   Add sub-category
@@ -630,7 +630,7 @@ export default function Catalog() {
         <Modal
           title={
             tab === 'categories' && createParent
-              ? `Add Level ${createParent.level + 1} sub-category`
+              ? `Add ${levelName(createParent.level + 1).toLowerCase()}`
               : `Add ${tabs.find((t) => t.id === tab)?.label.slice(0, -1).toLowerCase()}`
           }
           onClose={() => {

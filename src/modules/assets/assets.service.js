@@ -81,6 +81,10 @@ export async function create(data) {
     throw new AppError('INVALID_QUANTITY', 'Individual tracked assets must have quantity of 1', 400);
   }
 
+  if (!data.asset_tag) {
+    data = { ...data, asset_tag: await repository.nextAssetTag(data.category_id) };
+  }
+
   const created = await repository.create(data);
   return enrichAssetDepreciation(await repository.getById(created.id));
 }
@@ -124,7 +128,10 @@ export async function batchCreate(assetsData) {
           throw new Error('Individual tracked assets must have quantity of 1');
         }
 
-        created.push(await repository.create(assetData, client));
+        const toInsert = assetData.asset_tag
+          ? assetData
+          : { ...assetData, asset_tag: await repository.nextAssetTag(assetData.category_id, client) };
+        created.push(await repository.create(toInsert, client));
       } catch (error) {
         errors.push({
           index: i,

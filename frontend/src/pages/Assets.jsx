@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { assetsApi, categoriesApi, locationsApi } from '../api/client'
 import { BUDGET_TYPES, budgetTypeLabel } from '../constants'
-import { findCategoryNode, isAssetCategoryLeaf } from '../categoryTree'
+import { findCategoryNode, isAssetCategoryLeaf, namedCategoryLevels } from '../categoryTree'
 import CascadingCategoryPicker from '../components/CascadingCategoryPicker'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
@@ -16,6 +16,7 @@ import { useStatusMaster } from '../hooks/useStatusMaster'
 const SMALL_VALUE_ASSET_LIMIT = 2000
 
 const emptyForm = {
+  asset_tag: '',
   name: '',
   category_id: '',
   tracking: 'individual',
@@ -122,12 +123,13 @@ export default function Assets() {
     e.preventDefault()
     setError('')
     if (!isAssetCategoryLeaf(categoryTree, form.category_id)) {
-      setError('Choose a Level 2 to 4 leaf sub-category before saving this asset.')
+      setError('Pick the category down to its last level (main category, sub category or item master) before saving.')
       return
     }
     setSaving(true)
     try {
       await assetsApi.create({
+        asset_tag: form.asset_tag.trim() || undefined,
         name: form.name.trim(),
         category_id: form.category_id,
         tracking: form.tracking,
@@ -158,12 +160,13 @@ export default function Assets() {
     e.preventDefault()
     setError('')
     if (!isAssetCategoryLeaf(categoryTree, form.category_id)) {
-      setError('Choose a Level 2 to 4 leaf sub-category before saving this asset.')
+      setError('Pick the category down to its last level (main category, sub category or item master) before saving.')
       return
     }
     setSaving(true)
     try {
       await assetsApi.update(editItem.id, {
+        asset_tag: form.asset_tag.trim() || undefined,
         name: form.name.trim(),
         category_id: form.category_id,
         tracking: form.tracking,
@@ -230,6 +233,7 @@ export default function Assets() {
   function openEdit(asset) {
     setEditItem(asset)
     setForm({
+      asset_tag: asset.asset_tag || '',
       name: asset.name || '',
       category_id: asset.category_id || '',
       tracking: asset.tracking || 'individual',
@@ -435,14 +439,25 @@ export default function Assets() {
             onSubmit={editItem ? handleUpdate : handleCreate}
           >
             {error ? <div className="error-banner" role="alert">{error}</div> : null}
-            <div className="field">
-              <label htmlFor="name">Name</label>
-              <input
-                id="name"
-                value={form.name}
-                onChange={(e) => updateForm('name', e.target.value)}
-                required
-              />
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="name">Name</label>
+                <input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => updateForm('name', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="asset_tag">Unique number</label>
+                <input
+                  id="asset_tag"
+                  value={form.asset_tag}
+                  onChange={(e) => updateForm('asset_tag', e.target.value)}
+                  placeholder={editItem ? '' : 'Auto-generated if left blank'}
+                />
+              </div>
             </div>
             <CascadingCategoryPicker
               tree={categoryTree}
@@ -664,8 +679,14 @@ export default function Assets() {
           }
         >
           <div className="form" style={{ gap: '0.65rem' }}>
-            <div><strong>Category:</strong> {detailItem.category_path || detailItem.category_name || '—'}</div>
-            <div><strong>Asset tag:</strong> {detailItem.asset_tag || '—'}</div>
+            <div><strong>Unique number:</strong> {detailItem.asset_tag || '—'}</div>
+            {namedCategoryLevels(detailItem.category_path).length ? (
+              namedCategoryLevels(detailItem.category_path).map((l) => (
+                <div key={l.level}><strong>{l.label}:</strong> {l.name}</div>
+              ))
+            ) : (
+              <div><strong>Category:</strong> {detailItem.category_name || '—'}</div>
+            )}
             <div><strong>Location:</strong> {detailItem.location_name || '—'}</div>
             <div><strong>Issued to:</strong> {detailItem.issued_to || '—'}</div>
             <div>

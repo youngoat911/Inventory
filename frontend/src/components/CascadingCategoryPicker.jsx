@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { findCategoryPath, getParentSelection } from '../categoryTree'
+import { findCategoryPath, getParentSelection, LEVEL_NAMES } from '../categoryTree'
 
 export default function CascadingCategoryPicker({
   tree = [],
@@ -62,7 +62,7 @@ export default function CascadingCategoryPicker({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
         <select
           className="select"
-          aria-label="Filter by Level 1 category"
+          aria-label={`Filter by ${LEVEL_NAMES[1]}`}
           value={level1?.id || ''}
           onChange={(e) => handleSelect(0, e.target.value)}
         >
@@ -77,7 +77,7 @@ export default function CascadingCategoryPicker({
         {level1 && l2Options.length > 0 ? (
           <select
             className="select"
-            aria-label="Filter by Level 2 category"
+            aria-label={`Filter by ${LEVEL_NAMES[2]}`}
             value={level2?.id || ''}
             onChange={(e) => handleSelect(1, e.target.value)}
           >
@@ -93,7 +93,7 @@ export default function CascadingCategoryPicker({
         {level2 && l3Options.length > 0 ? (
           <select
             className="select"
-            aria-label="Filter by Level 3 category"
+            aria-label={`Filter by ${LEVEL_NAMES[3]}`}
             value={level3?.id || ''}
             onChange={(e) => handleSelect(2, e.target.value)}
           >
@@ -109,7 +109,7 @@ export default function CascadingCategoryPicker({
         {level3 && l4Options.length > 0 ? (
           <select
             className="select"
-            aria-label="Filter by Level 4 category"
+            aria-label={`Filter by ${LEVEL_NAMES[4]}`}
             value={level4?.id || ''}
             onChange={(e) => handleSelect(3, e.target.value)}
           >
@@ -127,7 +127,7 @@ export default function CascadingCategoryPicker({
 
   return (
     <div className="field">
-      <label htmlFor="category_l1">Category (Level 1 → Level 4)</label>
+      <label htmlFor="category_l1">Category ({LEVEL_NAMES[1]} → {LEVEL_NAMES[4]})</label>
       <div className="form-row">
         <select
           id="category_l1"
@@ -135,7 +135,7 @@ export default function CascadingCategoryPicker({
           onChange={(e) => handleSelect(0, e.target.value)}
           required={required}
         >
-          <option value="">Select Level 1</option>
+          <option value="">Select {LEVEL_NAMES[1].toLowerCase()}</option>
           {l1Options.map((c) => (
             <option key={c.id} value={c.id}>
               {c.code ? `${c.code} — ` : ''}{c.name}
@@ -145,7 +145,7 @@ export default function CascadingCategoryPicker({
 
         <select
           id="category_l2"
-          aria-label="Level 2 sub-category"
+          aria-label={LEVEL_NAMES[2]}
           value={level2?.id || ''}
           onChange={(e) => handleSelect(1, e.target.value)}
           disabled={!level1 || l2Options.length === 0}
@@ -153,10 +153,10 @@ export default function CascadingCategoryPicker({
         >
           <option value="">
             {!level1
-              ? 'Select Level 1 first'
+              ? `Select ${LEVEL_NAMES[1].toLowerCase()} first`
               : l2Options.length === 0
-                ? 'No sub-categories'
-                : 'Select Level 2'}
+                ? 'No main categories'
+                : `Select ${LEVEL_NAMES[2].toLowerCase()}`}
           </option>
           {l2Options.map((c) => (
             <option key={c.id} value={c.id}>
@@ -170,12 +170,12 @@ export default function CascadingCategoryPicker({
         <div className="form-row" style={{ marginTop: '0.5rem' }}>
           <select
             id="category_l3"
-            aria-label="Level 3 sub-category"
+            aria-label={LEVEL_NAMES[3]}
             value={level3?.id || ''}
             onChange={(e) => handleSelect(2, e.target.value)}
             required={required}
           >
-            <option value="">Select Level 3</option>
+            <option value="">Select {LEVEL_NAMES[3].toLowerCase()}</option>
             {l3Options.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code ? `${c.code} — ` : ''}{c.name}
@@ -186,12 +186,12 @@ export default function CascadingCategoryPicker({
           {level3 && l4Options.length > 0 ? (
             <select
               id="category_l4"
-              aria-label="Level 4 sub-category"
+              aria-label={LEVEL_NAMES[4]}
               value={level4?.id || ''}
               onChange={(e) => handleSelect(3, e.target.value)}
               required={required}
             >
-              <option value="">Select Level 4</option>
+              <option value="">Select {LEVEL_NAMES[4].toLowerCase()}</option>
               {l4Options.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.code ? `${c.code} — ` : ''}{c.name}
@@ -206,11 +206,11 @@ export default function CascadingCategoryPicker({
         <span className="muted" style={{ fontSize: '0.85rem', marginTop: '0.35rem', display: 'block' }}>
           Path: <strong>{deepest.full_path || selectedPath.map((n) => n.name).join(' > ')}</strong>
           {deepest.code_path ? ` (${deepest.code_path})` : ''}
-          {!isLeafSelected ? ' — select a leaf sub-category' : ''}
+          {!isLeafSelected ? ' — keep drilling down to the last level' : ''}
         </span>
       ) : (
         <span className="muted" style={{ fontSize: '0.85rem', marginTop: '0.35rem', display: 'block' }}>
-          Choose a Level 1 category and drill down to a leaf sub-category (Levels 2–4).
+          Choose a broad category group and drill down through main category, sub category and item master.
         </span>
       )}
     </div>

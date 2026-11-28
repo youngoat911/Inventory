@@ -51,3 +51,23 @@ export function flattenCategoryTree(nodes, expandedIds) {
   walk(nodes)
   return rows
 }
+
+// Display names for the four classification levels
+export const LEVEL_NAMES = {
+  1: 'Broad category group',
+  2: 'Main category',
+  3: 'Sub category',
+  4: 'Item master',
+}
+
+export function levelName(level) {
+  return LEVEL_NAMES[level] || `Level ${level}`
+}
+
+/** Split a "A > B > C" category path into named levels. */
+export function namedCategoryLevels(fullPath) {
+  if (!fullPath) return []
+  return String(fullPath)
+    .split(' > ')
+    .map((name, i) => ({ level: i + 1, label: levelName(i + 1), name }))
+}

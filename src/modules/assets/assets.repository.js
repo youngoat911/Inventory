@@ -397,6 +397,30 @@ export async function exportAssets(filters = {}) {
   return rows;
 }
 
+/**
+ * Reserve the next unique number for an item in the given category:
+ * <category code path>-<NNNN>. Skips numbers already taken by manually entered tags.
+ */
+export async function nextAssetTag(categoryId, client = pool) {
+  const { rows: catRows } = await client.query(
+    'SELECT code_path FROM category_paths WHERE id = $1',
+    [categoryId]
+  );
+  const prefix = catRows[0]?.code_path || 'AST';
+
+  for (;;) {
+    const { rows } = await client.query(
+      `INSERT INTO asset_tag_sequences (prefix, last_value) VALUES ($1, 1)
+       ON CONFLICT (prefix) DO UPDATE SET last_value = asset_tag_sequences.last_value + 1
+       RETURNING last_value`,
+      [prefix]
+    );
+    const tag = `${prefix}-${String(rows[0].last_value).padStart(4, '0')}`;
+    const { rows: taken } = await client.query('SELECT 1 FROM assets WHERE asset_tag = $1', [tag]);
+    if (taken.length === 0) return tag;
+  }
+}
+
 export async function getCategoryForAsset(categoryId, client = pool) {
   const { rows } = await client.query(
     `SELECT cp.id, cp.level, cp.is_legacy, cp.is_leaf
