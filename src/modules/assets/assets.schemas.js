@@ -11,6 +11,8 @@ export const createAssetSchema = z.object({
   quantity: z.number().int().min(0, 'Quantity must be non-negative').default(1),
   low_stock_threshold: z.number().int().min(0, 'Low stock threshold must be non-negative').default(0),
   unit_cost: z.number().min(0, 'Unit cost must be non-negative').optional(),
+  cost: z.number().min(0, 'Cost must be non-negative').optional(),
+  capitalization_date: z.string().date('Invalid capitalization date (use YYYY-MM-DD format)').optional(),
   serial_no: z.string().trim().optional(),
   brand_model: z.string().trim().optional(),
   condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged', 'under_repair'], {
@@ -39,6 +41,8 @@ export const updateAssetSchema = z.object({
   quantity: z.number().int().min(0).optional(),
   low_stock_threshold: z.number().int().min(0).optional(),
   unit_cost: z.number().min(0).optional(),
+  cost: z.number().min(0).nullable().optional(),
+  capitalization_date: z.string().date().nullable().optional(),
   serial_no: z.string().trim().nullable().optional(),
   brand_model: z.string().trim().optional(),
   condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged', 'under_repair']).optional(),

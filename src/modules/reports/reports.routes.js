@@ -8,7 +8,8 @@ import {
   maintenanceCostsQuerySchema,
   disposalSummaryQuerySchema,
   verificationProgressQuerySchema,
-  assetUtilizationQuerySchema
+  assetUtilizationQuerySchema,
+  depreciationQuerySchema
 } from './reports.schemas.js';
 import * as controller from './reports.controller.js';
 import { requireAdmin, requireAssignedOrg, requireRole } from '../../middleware/authorize.js';
@@ -29,5 +30,6 @@ router.get('/reports/maintenance-costs', validate(maintenanceCostsQuerySchema, '
 router.get('/reports/disposal-summary', validate(disposalSummaryQuerySchema, 'query'), controller.getDisposalSummaryReport);
 router.get('/reports/verification-progress', validate(verificationProgressQuerySchema, 'query'), controller.getVerificationProgressReport);
 router.get('/reports/asset-utilization', validate(assetUtilizationQuerySchema, 'query'), controller.getAssetUtilizationReport);
+router.get('/reports/depreciation', requireRole('super_admin', 'org_admin', 'auditor'), validate(depreciationQuerySchema, 'query'), controller.getDepreciationReport);
 
 export default router;

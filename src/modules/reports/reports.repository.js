@@ -318,3 +318,60 @@ export async function getAssetUtilization(filters) {
 
   return rows;
 }
+
+
+export async function getDepreciationData(filters = {}) {
+  const { rows: level1Categories } = await pool.query(
+    `SELECT id, code, name, dep_rate_percent::float8 AS dep_rate_percent,
+            amortization_life_years, dep_method, sort_order
+     FROM categories
+     WHERE level = 1 AND is_system = true
+     ORDER BY sort_order ASC, code ASC`
+  );
+
+  const conditions = ['a.cost IS NOT NULL', 'a.capitalization_date IS NOT NULL', 'cp.top_level_id IS NOT NULL'];
+  const values = [];
+  let paramCount = 0;
+
+  if (filters.org_unit_id) {
+    paramCount++;
+    conditions.push(`a.owner_org_id = $${paramCount}`);
+    values.push(filters.org_unit_id);
+  }
+  if (filters.org_unit_ids) {
+    paramCount++;
+    conditions.push(`a.owner_org_id = ANY($${paramCount}::uuid[])`);
+    values.push(filters.org_unit_ids);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+  const { rows: assets } = await pool.query(
+    `SELECT a.id,
+            a.name,
+            a.cost::float8 AS cost,
+            a.capitalization_date,
+            a.status,
+            a.owner_org_id,
+            cp.top_level_id,
+            cp.top_level_name,
+            SPLIT_PART(cp.code_path, '-', 1) AS top_level_category_code,
+            cp.effective_dep_rate_percent::float8 AS effective_dep_rate_percent,
+            cp.top_level_dep_rate_percent::float8 AS top_level_dep_rate_percent,
+            cp.top_level_amortization_life_years,
+            disp.disposed_on
+     FROM assets a
+     JOIN category_paths cp ON cp.id = a.category_id
+     LEFT JOIN LATERAL (
+       SELECT d.disposed_on
+       FROM disposals d
+       WHERE d.asset_id = a.id AND d.status IN ('approved', 'completed')
+       ORDER BY d.disposed_on DESC NULLS LAST, d.created_at DESC
+       LIMIT 1
+     ) disp ON true
+     ${whereClause}`,
+    values
+  );
+
+  return { level1Categories, assets };
+}

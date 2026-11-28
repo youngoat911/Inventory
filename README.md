@@ -36,7 +36,7 @@ Inventory/
 │       ├── auth/                        # Registration, login, password reset & PASETO tokens
 │       ├── blocks/                      # Borrower blocks & restrictions
 │       ├── borrower-blocks/             # Borrower blocks (retained for compatibility)
-│       ├── categories/                  # Asset classifications
+│       ├── categories/                  # 4-level hierarchical asset classification (19 fixed Level 1 + L2–L4 sub-categories)
 │       ├── disposals/                   # Asset disposal requests and approvals
 │       ├── drop-boxes/                  # Physical return drop box endpoints
 │       ├── issues/                      # Asset checkouts, returns, renewals & loan lifecycle
@@ -209,7 +209,7 @@ npm run start:prod
 | Page | Route | Description |
 |------|-------|-------------|
 | **Dashboard** | `/` | System overview, inventory metrics, overdue loans, open alerts, and quick actions. |
-| **Catalog** | `/catalog` | Management of categories, storage locations, and organization units. |
+| **Catalog** | `/catalog` | Expandable 4-level asset classification tree (19 fixed Level 1 categories + super-admin-managed Levels 2–4), storage locations, organization units, and drop boxes. |
 | **Assets** | `/assets` | Search, filter, add, edit, track, and export physical equipment. |
 | **Issues & Loans** | `/issues` | Issue equipment, check-in returns, renew active loans, or report lost items. |
 | **Transfers** | `/transfers` | Transfer asset custody between different departments or units. |
@@ -226,6 +226,68 @@ npm run start:prod
 | **Audit Log** | `/audit-log` | Immutable compliance log of all database entity mutations. |
 | **Reports** | `/reports` | Utilization rates, cost breakdowns, and overdue analytics. |
 | **Auth** | `/login`, `/register`, `/forgot-password`, `/reset-password` | User authentication and recovery. |
+
+---
+
+## Asset Classification Hierarchy
+
+Assets are classified using a **4-level hierarchy** (`Level 1 → Level 2 → Level 3 → Level 4`). Assets must be assigned to a **leaf sub-category** (Levels 2–4 with no children).
+
+- **Level 1 (Fixed & Read-Only):** 19 government asset categories seeded by migration (`01` Land through `19` Patents):
+  1. `01` Land
+  2. `02` Site Development
+  3. `03` Buildings
+  4. `04` Roads and Bridges
+  5. `05` Tubewell & Water Supply
+  6. `06` Sewage and Drainage
+  7. `07` Electrical Installation and Equipment
+  8. `08` Plant and Machinery
+  9. `09` Scientific and Laboratory Equipment
+  10. `10` Office Equipment
+  11. `11` Audio Visual Equipment
+  12. `12` Computers and Peripherals
+  13. `13` Furniture, Fixtures and Fittings
+  14. `14` Vehicles
+  15. `15` Library Books
+  16. `16` Small Value Assets
+  17. `17` Computer Software
+  18. `18` E-Journals
+  19. `19` Patents
+- **Levels 2–4:** Managed exclusively by `super_admin` via `/catalog`.
+
+### Depreciation Rates & Calculation Rules
+
+> Note: These rates and rules follow the Ministry of Education format for Central Higher Educational Institutions (*Schedule 4 - Fixed Assets*). Each institute should verify and configure its own accounting policy as needed.
+
+- **Method:** Straight-Line Method (SLM) on original `cost` (`annual_dep = cost * effective_rate / 100`).
+- **Financial Year:** 1 April to 31 March (`GET /api/v1/reports/depreciation?fy=YYYY-YY`).
+- **Full-Year Charge:** Full-year depreciation is charged in the financial year of `capitalization_date` regardless of the month (no pro-rata).
+- **Residual Value:** Depreciation stops when book value reaches **₹1** (except **Small Value Assets**, which depreciate 100% in the year of acquisition to **₹0** residual; `SMALL_VALUE_ASSET_LIMIT = 2000` is shown as a form hint).
+- **Land & Site Development:** 0% depreciation (book value remains equal to cost).
+- **Disposed Assets:** Stop depreciating starting from the financial year of disposal.
+- **Inheritance:** Only Level 1 categories carry a rate; Levels 2–4 inherit their Level 1 ancestor's rate.
+
+| Code | Level 1 Category | Rate / Life |
+|------|------------------|-------------|
+| `01` | Land | 0% |
+| `02` | Site Development | 0% |
+| `03` | Buildings | 2% |
+| `04` | Roads and Bridges | 2% |
+| `05` | Tubewell & Water Supply | 2% |
+| `06` | Sewage and Drainage | 2% |
+| `07` | Electrical Installation and Equipment | 5% |
+| `08` | Plant and Machinery | 5% |
+| `09` | Scientific and Laboratory Equipment | 8% |
+| `10` | Office Equipment | 7.5% |
+| `11` | Audio Visual Equipment | 7.5% |
+| `12` | Computers and Peripherals | 20% |
+| `13` | Furniture, Fixtures and Fittings | 7.5% |
+| `14` | Vehicles | 10% |
+| `15` | Library Books | 10% |
+| `16` | Small Value Assets | 100% |
+| `17` | Computer Software | 40% |
+| `18` | E-Journals | 40% |
+| `19` | Patents | 9 years (11.111%) |
 
 ---
 

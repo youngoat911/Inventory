@@ -108,3 +108,13 @@ export async function getAssetUtilizationReport(req, res, next) {
     next(error);
   }
 }
+
+export async function getDepreciationReport(req, res, next) {
+  try {
+    const filters = reportFilters(req.user, req.validated.query);
+    const result = await service.getDepreciationReport(filters);
+    res.status(200).json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}

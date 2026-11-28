@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { assetsApi, categoriesApi } from '../api/client'
+import { findCategoryNode, isAssetCategoryLeaf } from '../categoryTree'
+import CascadingCategoryPicker from '../components/CascadingCategoryPicker'
 import EmptyState from '../components/EmptyState'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -9,12 +11,16 @@ import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
+const SMALL_VALUE_ASSET_LIMIT = 2000
+
 const emptyForm = {
   name: '',
   category_id: '',
   tracking: 'individual',
   quantity: 1,
   low_stock_threshold: 0,
+  cost: '',
+  capitalization_date: '',
   condition: 'good',
   status: 'available',
   brand_model: '',
@@ -28,14 +34,16 @@ export default function Assets() {
   const { isAdmin } = useAuth()
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
-  const [categories, setCategories] = useState([])
+  const [categoryTree, setCategoryTree] = useState([])
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [detailItem, setDetailItem] = useState(null)
   const [qrInfo, setQrInfo] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
@@ -49,6 +57,7 @@ export default function Assets() {
         limit: 20,
         q: q || undefined,
         status: status || undefined,
+        category_id: categoryId || undefined,
       })
       setItems(res.data || [])
       setPagination(res.pagination || { page: 1, limit: 20, total: 0, pages: 1 })
@@ -57,7 +66,7 @@ export default function Assets() {
     } finally {
       setLoading(false)
     }
-  }, [page, q, status])
+  }, [page, q, status, categoryId])
 
   useEffect(() => {
     load()
@@ -69,9 +78,9 @@ export default function Assets() {
 
   useEffect(() => {
     categoriesApi
-      .list({ limit: 100 })
-      .then((res) => setCategories(res.data || []))
-      .catch(() => setCategories([]))
+      .tree()
+      .then((res) => setCategoryTree(res.data || []))
+      .catch(() => setCategoryTree([]))
   }, [])
 
   function updateForm(key, value) {
@@ -80,8 +89,12 @@ export default function Assets() {
 
   async function handleCreate(e) {
     e.preventDefault()
-    setSaving(true)
     setError('')
+    if (!isAssetCategoryLeaf(categoryTree, form.category_id)) {
+      setError('Choose a Level 2 to 4 leaf sub-category before saving this asset.')
+      return
+    }
+    setSaving(true)
     try {
       await assetsApi.create({
         name: form.name.trim(),
@@ -89,6 +102,8 @@ export default function Assets() {
         tracking: form.tracking,
         quantity: Number(form.quantity),
         low_stock_threshold: Number(form.low_stock_threshold),
+        cost: form.cost !== '' ? Number(form.cost) : undefined,
+        capitalization_date: form.capitalization_date || undefined,
         condition: form.condition,
         status: form.status,
         brand_model: form.brand_model.trim() || undefined,
@@ -109,8 +124,12 @@ export default function Assets() {
 
   async function handleUpdate(e) {
     e.preventDefault()
-    setSaving(true)
     setError('')
+    if (!isAssetCategoryLeaf(categoryTree, form.category_id)) {
+      setError('Choose a Level 2 to 4 leaf sub-category before saving this asset.')
+      return
+    }
+    setSaving(true)
     try {
       await assetsApi.update(editItem.id, {
         name: form.name.trim(),
@@ -118,6 +137,8 @@ export default function Assets() {
         tracking: form.tracking,
         quantity: Number(form.quantity),
         low_stock_threshold: Number(form.low_stock_threshold),
+        cost: form.cost !== '' ? Number(form.cost) : undefined,
+        capitalization_date: form.capitalization_date || undefined,
         condition: form.condition,
         status: form.status,
         brand_model: form.brand_model.trim() || undefined,
@@ -150,6 +171,7 @@ export default function Assets() {
         format: 'csv',
         q: q || undefined,
         status: status || undefined,
+        category_id: categoryId || undefined,
       })
       const blob = new Blob([res.data], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
@@ -180,6 +202,8 @@ export default function Assets() {
       tracking: asset.tracking || 'individual',
       quantity: asset.quantity ?? 1,
       low_stock_threshold: asset.low_stock_threshold ?? 0,
+      cost: asset.cost != null ? String(asset.cost) : '',
+      capitalization_date: asset.capitalization_date ? String(asset.capitalization_date).slice(0, 10) : '',
       condition: asset.condition || 'good',
       status: asset.status || 'available',
       brand_model: asset.brand_model || '',
@@ -236,6 +260,15 @@ export default function Assets() {
           <option value="disposed">Disposed</option>
           <option value="lost">Lost</option>
         </select>
+        <CascadingCategoryPicker
+          tree={categoryTree}
+          value={categoryId}
+          onChange={(id) => {
+            setPage(1)
+            setCategoryId(id)
+          }}
+          mode="any"
+        />
       </div>
 
       <div className="panel">
@@ -269,6 +302,14 @@ export default function Assets() {
                       <div className="muted">
                         {asset.asset_tag || asset.brand_model || asset.id.slice(0, 8)}
                       </div>
+                      <div className="muted" style={{ fontSize: '0.8rem' }}>
+                        {asset.category_path || asset.category_name || '—'}
+                        {asset.category_is_legacy ? (
+                          <span className="badge badge-warn" style={{ marginLeft: '0.4rem' }}>
+                            Needs reclassification
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td data-label="Status">
                       <StatusBadge value={asset.status} />
@@ -280,6 +321,9 @@ export default function Assets() {
                     <td className="muted" data-label="Tracking">{asset.tracking}</td>
                     <td data-actions>
                       <div className="row-actions">
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetailItem(asset)}>
+                          Details
+                        </button>
                         {isAdmin ? (
                           <>
                             <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(asset)}>
@@ -349,6 +393,7 @@ export default function Assets() {
             className="form"
             onSubmit={editItem ? handleUpdate : handleCreate}
           >
+            {error ? <div className="error-banner" role="alert">{error}</div> : null}
             <div className="field">
               <label htmlFor="name">Name</label>
               <input
@@ -358,25 +403,56 @@ export default function Assets() {
                 required
               />
             </div>
-            <div className="field">
-              <label htmlFor="category_id">Category</label>
-              <select
-                id="category_id"
-                value={form.category_id}
-                onChange={(e) => updateForm('category_id', e.target.value)}
-                required
-              >
-                <option value="">Select category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              {categories.length === 0 ? (
-                <span className="muted">Create a category under Catalog first.</span>
-              ) : null}
+            <CascadingCategoryPicker
+              tree={categoryTree}
+              value={form.category_id}
+              onChange={(id) => updateForm('category_id', id)}
+              mode="leaf"
+              required
+            />
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="cost">Cost (₹)</label>
+                <input
+                  id="cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.cost}
+                  onChange={(e) => updateForm('cost', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="capitalization_date">Capitalization date</label>
+                <input
+                  id="capitalization_date"
+                  type="date"
+                  value={form.capitalization_date}
+                  onChange={(e) => updateForm('capitalization_date', e.target.value)}
+                />
+              </div>
             </div>
+            {(() => {
+              const selectedCat = form.category_id ? findCategoryNode(categoryTree, form.category_id) : null
+              const costNum = form.cost !== '' ? Number(form.cost) : 0
+              const rate = selectedCat?.effective_dep_rate_percent
+              const estAnnual = rate != null && costNum > 0 ? Math.round((costNum * rate) / 100 * 100) / 100 : null
+              return (
+                <>
+                  {costNum > 0 && costNum <= SMALL_VALUE_ASSET_LIMIT ? (
+                    <div className="muted" style={{ fontSize: '0.82rem', marginBottom: '0.5rem' }}>
+                      Hint: Cost is ₹{SMALL_VALUE_ASSET_LIMIT.toLocaleString('en-IN')} or less (Small Value Asset threshold).
+                    </div>
+                  ) : null}
+                  {rate != null && costNum > 0 ? (
+                    <div className="muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                      Effective depreciation rate: <strong>{rate}%</strong> — Est. annual depreciation:{' '}
+                      <strong>₹{estAnnual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                    </div>
+                  ) : null}
+                </>
+              )
+            })()}
             <div className="form-row">
               <div className="field">
                 <label htmlFor="tracking">Tracking</label>
@@ -459,6 +535,48 @@ export default function Assets() {
               />
             </div>
           </form>
+        </Modal>
+      ) : null}
+
+      {detailItem ? (
+        <Modal
+          title={detailItem.name}
+          onClose={() => setDetailItem(null)}
+          footer={
+            <button type="button" className="btn btn-ghost" onClick={() => setDetailItem(null)}>
+              Close
+            </button>
+          }
+        >
+          <div className="form" style={{ gap: '0.65rem' }}>
+            <div><strong>Category:</strong> {detailItem.category_path || detailItem.category_name || '—'}</div>
+            <div><strong>Asset tag:</strong> {detailItem.asset_tag || '—'}</div>
+            <div><strong>Status / Condition:</strong> {detailItem.status} / {detailItem.condition}</div>
+            <div>
+              <strong>Cost:</strong>{' '}
+              {detailItem.cost != null ? `₹${Number(detailItem.cost).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+            </div>
+            <div>
+              <strong>Capitalization date:</strong>{' '}
+              {detailItem.capitalization_date ? String(detailItem.capitalization_date).slice(0, 10) : '—'}
+            </div>
+            <div>
+              <strong>Depreciation rate:</strong>{' '}
+              {detailItem.effective_dep_rate_percent != null ? `${detailItem.effective_dep_rate_percent}%` : '—'}
+            </div>
+            <div>
+              <strong>Accumulated depreciation:</strong>{' '}
+              {detailItem.accumulated_depreciation != null
+                ? `₹${Number(detailItem.accumulated_depreciation).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : '—'}
+            </div>
+            <div>
+              <strong>Current book value:</strong>{' '}
+              {detailItem.current_book_value != null
+                ? `₹${Number(detailItem.current_book_value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : '—'}
+            </div>
+          </div>
         </Modal>
       ) : null}
 

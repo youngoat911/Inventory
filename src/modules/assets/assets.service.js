@@ -3,8 +3,52 @@ import * as qrService from '../../shared/qr-token.service.js';
 import { AppError } from '../../shared/app-error.js';
 import { withTransaction } from '../../db/transaction.js';
 import { stringify } from 'csv-stringify/sync';
+import { getDepreciation, getEffectiveDepRate, getFinancialYearEndYear } from '../../shared/depreciation.js';
+
+function enrichAssetDepreciation(asset) {
+  if (!asset) return asset;
+  const effectiveRate = getEffectiveDepRate(asset);
+  const dep = getDepreciation(asset, getFinancialYearEndYear());
+  return {
+    ...asset,
+    effective_dep_rate_percent: effectiveRate,
+    accumulated_depreciation: dep.accumulated_depreciation,
+    current_book_value: dep.closing_book_value,
+  };
+}
+
+async function validateAssetCategory(categoryId, client) {
+  const category = await repository.getCategoryForAsset(categoryId, client);
+  if (!category) {
+    throw new AppError('CATEGORY_NOT_FOUND', 'Category not found', 404);
+  }
+  if (category.is_legacy) {
+    throw new AppError(
+      'LEGACY_CATEGORY_FORBIDDEN',
+      'Legacy categories cannot be assigned to assets; choose a hierarchical sub-category',
+      400
+    );
+  }
+  if (!category.level || category.level < 2) {
+    throw new AppError(
+      'CATEGORY_LEVEL_INVALID',
+      'Assets must be assigned to a Level 2, 3, or 4 sub-category, not a Level 1 category',
+      400
+    );
+  }
+  if (!category.is_leaf) {
+    throw new AppError(
+      'NON_LEAF_CATEGORY',
+      'Assets must be assigned to a leaf category with no sub-categories',
+      400
+    );
+  }
+}
 
 export async function create(data) {
+  // Validate category is an active leaf (Level 2-4)
+  await validateAssetCategory(data.category_id);
+
   // Validate unique constraints
   if (data.asset_tag) {
     const existing = await repository.getByAssetTag(data.asset_tag);
@@ -25,7 +69,8 @@ export async function create(data) {
     throw new AppError('INVALID_QUANTITY', 'Individual tracked assets must have quantity of 1', 400);
   }
 
-  return repository.create(data);
+  const created = await repository.create(data);
+  return enrichAssetDepreciation(await repository.getById(created.id));
 }
 
 export async function batchCreate(assetsData) {
@@ -37,6 +82,9 @@ export async function batchCreate(assetsData) {
       const assetData = assetsData[i];
       
       try {
+        // Validate category is an active leaf (Level 2-4)
+        await validateAssetCategory(assetData.category_id, client);
+
         // Validate unique constraints
         if (assetData.asset_tag) {
           const { rows } = await client.query(
@@ -66,12 +114,12 @@ export async function batchCreate(assetsData) {
         // Insert asset
         const { rows } = await client.query(
           `INSERT INTO assets (
-            asset_tag, name, description, category_id, tracking, quantity, 
-            low_stock_threshold, unit_cost, serial_no, brand_model, condition, 
+            asset_tag, name, description, category_id, tracking, quantity,
+            low_stock_threshold, unit_cost, cost, capitalization_date, serial_no, brand_model, condition,
             status, owner_org_id, home_berm_id, location_id, responsible_user_id,
             is_issuable, loan_days_override, purchase_id, warranty_until, is_institute_asset
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
           RETURNING *`,
           [
             assetData.asset_tag || null,
@@ -82,6 +130,8 @@ export async function batchCreate(assetsData) {
             assetData.quantity,
             assetData.low_stock_threshold,
             assetData.unit_cost || null,
+            assetData.cost ?? null,
+            assetData.capitalization_date || null,
             assetData.serial_no || null,
             assetData.brand_model || null,
             assetData.condition,
@@ -121,7 +171,7 @@ export async function getById(id) {
   if (!asset) {
     throw new AppError('ASSET_NOT_FOUND', 'Asset not found', 404);
   }
-  return asset;
+  return enrichAssetDepreciation(asset);
 }
 
 export async function list(filters) {
@@ -135,7 +185,7 @@ export async function list(filters) {
   const result = await repository.list(processedFilters);
   
   return {
-    items: result.items,
+    items: result.items.map(enrichAssetDepreciation),
     pagination: {
       page: filters.page,
       limit: filters.limit,
@@ -150,6 +200,10 @@ export async function update(id, data) {
   const existing = await repository.getById(id);
   if (!existing) {
     throw new AppError('ASSET_NOT_FOUND', 'Asset not found', 404);
+  }
+
+  if (data.category_id && data.category_id !== existing.category_id) {
+    await validateAssetCategory(data.category_id);
   }
 
   // Validate unique constraints if updating
@@ -175,7 +229,8 @@ export async function update(id, data) {
     throw new AppError('INVALID_QUANTITY', 'Individual tracked assets must have quantity of 1', 400);
   }
 
-  return repository.update(id, data);
+  await repository.update(id, data);
+  return enrichAssetDepreciation(await repository.getById(id));
 }
 
 export async function deleteById(id) {
@@ -244,6 +299,8 @@ export async function exportAssets(filters) {
       'Name': asset.name,
       'Description': asset.description || '',
       'Category': asset.category_name || '',
+      'Category Path': asset.category_path || asset.category_name || '',
+      'Category Code': asset.category_code_path || '',
       'Tracking': asset.tracking,
       'Quantity': asset.quantity,
       'Low Stock Threshold': asset.low_stock_threshold,

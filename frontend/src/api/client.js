@@ -216,11 +216,14 @@ export const reportsApi = {
   disposalSummary: (params = {}) => api(`/reports/disposal-summary${qs(params)}`),
   verificationProgress: (params = {}) => api(`/reports/verification-progress${qs(params)}`),
   assetUtilization: (params = {}) => api(`/reports/asset-utilization${qs(params)}`),
+  depreciation: (params = {}) => api(`/reports/depreciation${qs(params)}`),
 }
 
 export const categoriesApi = {
   list: (params = {}) => api(`/categories${qs(params)}`),
+  tree: () => api('/categories/tree'),
   get: (id) => api(`/categories/${id}`),
+  path: (id) => api(`/categories/${id}/path`),
   create: (body) => api('/categories', { method: 'POST', body }),
   update: (id, body) => api(`/categories/${id}`, { method: 'PATCH', body }),
   remove: (id) => api(`/categories/${id}`, { method: 'DELETE' }),

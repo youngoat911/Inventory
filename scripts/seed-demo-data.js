@@ -55,10 +55,18 @@ try {
       ['d0000000-0000-4000-8000-000000000004', 'd0000000-0000-4000-8000-000000000005'],
     ],
     [
-      `INSERT INTO categories (id, name, default_low_stock_threshold, default_loan_days, max_renewals)
+      `INSERT INTO categories (
+         id, name, parent_id, level, code, is_system, is_legacy, sort_order,
+         default_low_stock_threshold, default_loan_days, max_renewals
+       )
        VALUES
-         ('d0000000-0000-4000-8000-000000000010', '[DEMO] Cameras', 1, 7, 1),
-         ('d0000000-0000-4000-8000-000000000011', '[DEMO] Audio Equipment', 2, 7, 1)
+         ('d0000000-0000-4000-8000-000000000010', '[DEMO] Cameras', '10000000-0000-4000-8000-000000000011', 2, '01', false, false, 1, 1, 7, 1),
+         ('d0000000-0000-4000-8000-000000000011', '[DEMO] Audio Equipment', '10000000-0000-4000-8000-000000000011', 2, '02', false, false, 2, 2, 7, 1),
+         ('d0000000-0000-4000-8000-000000000012', '[DEMO] Computers', '10000000-0000-4000-8000-000000000012', 2, '01', false, false, 1, 0, 7, 0),
+         ('d0000000-0000-4000-8000-000000000013', '[DEMO] Desktops', 'd0000000-0000-4000-8000-000000000012', 3, '01', false, false, 1, 0, 7, 0),
+         ('d0000000-0000-4000-8000-000000000014', '[DEMO] All-in-One', 'd0000000-0000-4000-8000-000000000013', 4, '01', false, false, 1, 0, 7, 0),
+         ('d0000000-0000-4000-8000-000000000015', '[DEMO] Physics Lab', '10000000-0000-4000-8000-000000000009', 2, '01', false, false, 1, 0, 7, 0),
+         ('d0000000-0000-4000-8000-000000000016', '[DEMO] Oscilloscopes', 'd0000000-0000-4000-8000-000000000015', 3, '01', false, false, 1, 0, 7, 0)
        ON CONFLICT (id) DO NOTHING`,
       [],
     ],

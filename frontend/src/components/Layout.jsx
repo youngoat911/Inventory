@@ -30,6 +30,7 @@ export default function Layout() {
   const { theme, toggle: toggleTheme } = useTheme()
   const { unreadCount } = useNotifications()
   const [openPath, setOpenPath] = useState(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const location = useLocation()
   const menuOpen = openPath === location.pathname
   const toggleRef = useRef(null)
@@ -76,7 +77,7 @@ export default function Layout() {
   )
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${sidebarCollapsed ? ' sidebar-is-collapsed' : ''}`}>
       <a href="#main-content" className="skip-link">Skip to content</a>
 
       <header className="mobile-topbar">
@@ -111,16 +112,29 @@ export default function Layout() {
       )}
 
       <aside
-        className={`sidebar${menuOpen ? ' menu-open' : ''}`}
+        className={`sidebar${menuOpen ? ' menu-open' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
         aria-modal={menuOpen ? 'true' : undefined}
         role={menuOpen ? 'dialog' : undefined}
         aria-label={menuOpen ? 'Navigation menu' : undefined}
       >
         <div className="sidebar-header">
-          <div className="sidebar-brand">
+          <div className={`sidebar-brand${sidebarCollapsed ? ' sidebar-brand-hidden' : ''}`}>
             Gymkhana Inventory
             <span>BERM equipment desk</span>
           </div>
+          <button
+            type="button"
+            className="sidebar-toggle btn btn-ghost btn-sm icon-btn"
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!sidebarCollapsed}
+            aria-controls="primary-navigation"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={() => setSidebarCollapsed((v) => !v)}
+          >
+            <span className="sidebar-toggle-lines">
+              <span /><span /><span />
+            </span>
+          </button>
           <button
             ref={closeRef}
             type="button"
@@ -134,7 +148,14 @@ export default function Layout() {
 
         <nav className="nav" id="primary-navigation" aria-label="Primary navigation">
           {visibleLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setOpenPath(null)}>
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.end}
+              onClick={() => setOpenPath(null)}
+              aria-label={sidebarCollapsed ? link.label : undefined}
+              title={sidebarCollapsed ? link.label : undefined}
+            >
               <Icon name={link.icon} size={18} />
               <span>{link.label}</span>
               {link.to === '/notifications' && unreadCount > 0 && (
@@ -147,7 +168,7 @@ export default function Layout() {
         <div className="sidebar-user">
           <div className="sidebar-user-info">
             <div className="user-avatar user-avatar-sm">{initials}</div>
-            <div>
+            <div className="sidebar-user-details">
               <strong>{user?.full_name || 'User'}</strong>
               <span>{user?.institute_email || user?.email}</span>
             </div>
@@ -166,9 +187,11 @@ export default function Layout() {
               type="button"
               className="btn btn-ghost btn-sm"
               onClick={logout}
+              aria-label="Sign out"
+              title="Sign out"
             >
               <Icon name="log-out" size={16} />
-              Sign out
+              <span>Sign out</span>
             </button>
           </div>
         </div>

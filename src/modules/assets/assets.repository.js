@@ -3,12 +3,12 @@ import { pool } from '../../db/pool.js';
 export async function create(data) {
   const { rows } = await pool.query(
     `INSERT INTO assets (
-      asset_tag, name, description, category_id, tracking, quantity, 
-      low_stock_threshold, unit_cost, serial_no, brand_model, condition, 
+      asset_tag, name, description, category_id, tracking, quantity,
+      low_stock_threshold, unit_cost, cost, capitalization_date, serial_no, brand_model, condition,
       status, owner_org_id, home_berm_id, location_id, responsible_user_id,
       is_issuable, loan_days_override, purchase_id, warranty_until, is_institute_asset
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
     RETURNING *`,
     [
       data.asset_tag || null,
@@ -19,6 +19,8 @@ export async function create(data) {
       data.quantity,
       data.low_stock_threshold,
       data.unit_cost || null,
+      data.cost ?? null,
+      data.capitalization_date || null,
       data.serial_no || null,
       data.brand_model || null,
       data.condition,
@@ -41,11 +43,29 @@ export async function getById(id) {
   const { rows } = await pool.query(
     `SELECT a.*,
             c.name as category_name,
+            c.is_legacy as category_is_legacy,
+            cp.full_path as category_path,
+            cp.code_path as category_code_path,
+            cp.top_level_name as top_level_category_name,
+            SPLIT_PART(cp.code_path, '-', 1) as top_level_category_code,
+            cp.effective_dep_rate_percent::float8 as effective_dep_rate_percent,
+            cp.top_level_dep_rate_percent::float8 as top_level_dep_rate_percent,
+            cp.top_level_amortization_life_years,
+            cp.top_level_dep_method,
+            disp.disposed_on,
             org.name as owner_org_name,
             l.name as location_name,
             u.full_name as responsible_user_name
      FROM assets a
      LEFT JOIN categories c ON a.category_id = c.id
+     LEFT JOIN category_paths cp ON a.category_id = cp.id
+     LEFT JOIN LATERAL (
+       SELECT d.disposed_on
+       FROM disposals d
+       WHERE d.asset_id = a.id AND d.status IN ('approved', 'completed')
+       ORDER BY d.disposed_on DESC NULLS LAST, d.created_at DESC
+       LIMIT 1
+     ) disp ON true
      LEFT JOIN org_units org ON a.owner_org_id = org.id
      LEFT JOIN locations l ON a.location_id = l.id
      LEFT JOIN users u ON a.responsible_user_id = u.id
@@ -93,10 +113,10 @@ export async function list(filters = {}) {
     values.push(filters.tracking);
   }
 
-  // Category filter
+  // Category filter (matches the category or any descendant)
   if (filters.category_id) {
     paramCount++;
-    conditions.push(`a.category_id = $${paramCount}`);
+    conditions.push(`($${paramCount} = ANY(cp.ancestor_ids) OR a.category_id = $${paramCount})`);
     values.push(filters.category_id);
   }
 
@@ -153,12 +173,30 @@ export async function list(filters = {}) {
   const { rows } = await pool.query(
     `SELECT a.*,
             c.name as category_name,
+            c.is_legacy as category_is_legacy,
+            cp.full_path as category_path,
+            cp.code_path as category_code_path,
+            cp.top_level_name as top_level_category_name,
+            SPLIT_PART(cp.code_path, '-', 1) as top_level_category_code,
+            cp.effective_dep_rate_percent::float8 as effective_dep_rate_percent,
+            cp.top_level_dep_rate_percent::float8 as top_level_dep_rate_percent,
+            cp.top_level_amortization_life_years,
+            cp.top_level_dep_method,
+            disp.disposed_on,
             org.name as owner_org_name,
             l.name as location_name,
             u.full_name as responsible_user_name,
             COUNT(*) OVER() as total_count
      FROM assets a
      LEFT JOIN categories c ON a.category_id = c.id
+     LEFT JOIN category_paths cp ON a.category_id = cp.id
+     LEFT JOIN LATERAL (
+       SELECT d.disposed_on
+       FROM disposals d
+       WHERE d.asset_id = a.id AND d.status IN ('approved', 'completed')
+       ORDER BY d.disposed_on DESC NULLS LAST, d.created_at DESC
+       LIMIT 1
+     ) disp ON true
      LEFT JOIN org_units org ON a.owner_org_id = org.id
      LEFT JOIN locations l ON a.location_id = l.id
      LEFT JOIN users u ON a.responsible_user_id = u.id
@@ -177,7 +215,7 @@ export async function list(filters = {}) {
 export async function update(id, fields) {
   const allowed = [
     'asset_tag', 'name', 'description', 'category_id', 'tracking', 'quantity',
-    'low_stock_threshold', 'unit_cost', 'serial_no', 'brand_model', 'condition',
+    'low_stock_threshold', 'unit_cost', 'cost', 'capitalization_date', 'serial_no', 'brand_model', 'condition',
     'status', 'owner_org_id', 'home_berm_id', 'location_id', 'responsible_user_id',
     'is_issuable', 'loan_days_override', 'purchase_id', 'warranty_until', 'is_institute_asset'
   ];
@@ -283,7 +321,7 @@ export async function exportAssets(filters = {}) {
 
   if (filters.category_id) {
     paramCount++;
-    conditions.push(`a.category_id = $${paramCount}`);
+    conditions.push(`($${paramCount} = ANY(cp.ancestor_ids) OR a.category_id = $${paramCount})`);
     values.push(filters.category_id);
   }
 
@@ -331,11 +369,16 @@ export async function exportAssets(filters = {}) {
   const { rows } = await pool.query(
     `SELECT a.*,
             c.name as category_name,
+            c.is_legacy as category_is_legacy,
+            cp.full_path as category_path,
+            cp.code_path as category_code_path,
+            cp.top_level_name as top_level_category_name,
             org.name as owner_org_name,
             l.name as location_name,
             u.full_name as responsible_user_name
      FROM assets a
      LEFT JOIN categories c ON a.category_id = c.id
+     LEFT JOIN category_paths cp ON a.category_id = cp.id
      LEFT JOIN org_units org ON a.owner_org_id = org.id
      LEFT JOIN locations l ON a.location_id = l.id
      LEFT JOIN users u ON a.responsible_user_id = u.id
@@ -346,6 +389,16 @@ export async function exportAssets(filters = {}) {
   );
 
   return rows;
+}
+
+export async function getCategoryForAsset(categoryId, client = pool) {
+  const { rows } = await client.query(
+    `SELECT cp.id, cp.level, cp.is_legacy, cp.is_leaf
+     FROM category_paths cp
+     WHERE cp.id = $1`,
+    [categoryId]
+  );
+  return rows[0];
 }
 
 function parseSortColumn(sort) {

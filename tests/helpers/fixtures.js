@@ -32,11 +32,25 @@ export async function createTestUser(userData = {}) {
 }
 
 /**
- * Create a test category
+ * Create a test category (defaults to a Level 2 leaf under Level 1 Plant and Machinery)
  */
 export async function createTestCategory(categoryData = {}) {
+  const defaultLevel1Id = '10000000-0000-4000-8000-000000000008';
+  const parentId = categoryData.parent_id ?? defaultLevel1Id;
+  let level = categoryData.level;
+
+  if (!level) {
+    const { rows: parentRows } = await pool.query(
+      'SELECT level FROM categories WHERE id = $1',
+      [parentId]
+    );
+    level = parentRows[0]?.level ? parentRows[0].level + 1 : 2;
+  }
+
+  const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const defaultData = {
-    name: `Test Category ${Date.now()}`,
+    name: `Test Category ${uniqueSuffix}`,
+    code: `T${uniqueSuffix}`,
     default_low_stock_threshold: 0,
     default_loan_days: 14,
     max_renewals: 2,
@@ -45,10 +59,21 @@ export async function createTestCategory(categoryData = {}) {
   const data = { ...defaultData, ...categoryData };
 
   const { rows } = await pool.query(
-    `INSERT INTO categories (name, parent_id, default_low_stock_threshold, default_loan_days, max_renewals)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO categories (
+       name, parent_id, level, code, is_system, is_legacy,
+       default_low_stock_threshold, default_loan_days, max_renewals
+     )
+     VALUES ($1, $2, $3, $4, false, false, $5, $6, $7)
      RETURNING *`,
-    [data.name, data.parent_id || null, data.default_low_stock_threshold, data.default_loan_days, data.max_renewals]
+    [
+      data.name,
+      parentId,
+      level,
+      data.code,
+      data.default_low_stock_threshold,
+      data.default_loan_days,
+      data.max_renewals,
+    ]
   );
 
   return rows[0];
@@ -147,9 +172,11 @@ export async function cleanupTestData() {
   await pool.query('DELETE FROM audit_log WHERE changed_by IS NULL OR changed_by IN (SELECT id FROM users WHERE institute_email LIKE \'test%\' OR institute_email LIKE \'security%\' OR institute_email LIKE \'pwtest%\') OR (table_name = \'assets\' AND record_id IN (SELECT id FROM assets WHERE name LIKE \'Test Asset%\'))');
   await pool.query('DELETE FROM qr_tokens WHERE entity_id IN (SELECT id FROM assets WHERE name LIKE \'Test%\' OR category_id IN (SELECT id FROM categories WHERE name LIKE \'Test Category%\'))');
   await pool.query('DELETE FROM assets WHERE name LIKE \'Test%\' OR category_id IN (SELECT id FROM categories WHERE name LIKE \'Test Category%\')');
-  await pool.query('DELETE FROM categories WHERE name LIKE \'Test Category%\'');
+  await pool.query('DELETE FROM categories WHERE is_system = false AND level = 4 AND name LIKE \'Test Category%\'');
+  await pool.query('DELETE FROM categories WHERE is_system = false AND level = 3 AND name LIKE \'Test Category%\'');
+  await pool.query('DELETE FROM categories WHERE is_system = false AND name LIKE \'Test Category%\'');
+  await pool.query('DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE institute_email LIKE \'test%\' OR institute_email LIKE \'security%\' OR institute_email LIKE \'pwtest%\') OR org_unit_id IN (SELECT id FROM org_units WHERE name LIKE \'Test Org%\')');
   await pool.query('DELETE FROM org_units WHERE name LIKE \'Test Org%\'');
-  await pool.query('DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE institute_email LIKE \'test%\' OR institute_email LIKE \'security%\' OR institute_email LIKE \'pwtest%\')');
   await pool.query('DELETE FROM borrower_blocks WHERE user_id IN (SELECT id FROM users WHERE institute_email LIKE \'test%\' OR institute_email LIKE \'security%\' OR institute_email LIKE \'pwtest%\')');
   await pool.query('DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE institute_email LIKE \'test%\' OR institute_email LIKE \'security%\' OR institute_email LIKE \'pwtest%\')');
   await pool.query('DELETE FROM password_reset_tokens WHERE user_id IN (SELECT id FROM users WHERE institute_email LIKE \'test%\' OR institute_email LIKE \'security%\' OR institute_email LIKE \'pwtest%\')');

@@ -7,12 +7,29 @@ import { useFetch } from '../hooks/useFetch'
 import { usePageTitle } from '../hooks/usePageTitle'
 
 const TABS = [
-  { id: 'inventory',   label: 'Inventory' },
-  { id: 'borrowing',   label: 'Borrowing' },
-  { id: 'overdue',     label: 'Overdue' },
-  { id: 'maintenance', label: 'Maintenance costs' },
-  { id: 'utilization', label: 'Utilization' },
+  { id: 'inventory',    label: 'Inventory' },
+  { id: 'borrowing',    label: 'Borrowing' },
+  { id: 'overdue',      label: 'Overdue' },
+  { id: 'maintenance',  label: 'Maintenance costs' },
+  { id: 'utilization',  label: 'Utilization' },
+  { id: 'depreciation', label: 'Depreciation' },
 ]
+
+function getDefaultFy() {
+  const now = new Date()
+  const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+  return `${startYear}-${String(startYear + 1).slice(-2)}`
+}
+
+function getFyOptions() {
+  const now = new Date()
+  const currentStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+  const options = []
+  for (let y = currentStart - 4; y <= currentStart + 1; y++) {
+    options.push(`${y}-${String(y + 1).slice(-2)}`)
+  }
+  return options
+}
 
 function CssBar({ label, value, max, formatter = (v) => v }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0
@@ -44,6 +61,7 @@ export default function Reports() {
   const [tab, setTab] = useState('inventory')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [fy, setFy] = useState(getDefaultFy)
 
   const params = {
     ...(dateFrom ? { date_from: dateFrom } : {}),
@@ -52,14 +70,15 @@ export default function Reports() {
 
   const { data, loading, error } = useFetch(() => {
     switch (tab) {
-      case 'inventory':   return reportsApi.assetInventory(params)
-      case 'borrowing':   return reportsApi.borrowingHistory(params)
-      case 'overdue':     return reportsApi.overdueLoans(params)
-      case 'maintenance': return reportsApi.maintenanceCosts(params)
-      case 'utilization': return reportsApi.assetUtilization(params)
-      default:            return Promise.resolve({ data: [] })
+      case 'inventory':    return reportsApi.assetInventory(params)
+      case 'borrowing':    return reportsApi.borrowingHistory(params)
+      case 'overdue':      return reportsApi.overdueLoans(params)
+      case 'maintenance':  return reportsApi.maintenanceCosts(params)
+      case 'utilization':  return reportsApi.assetUtilization(params)
+      case 'depreciation': return reportsApi.depreciation({ fy })
+      default:             return Promise.resolve({ data: [] })
     }
-  }, [tab, dateFrom, dateTo])
+  }, [tab, dateFrom, dateTo, fy])
 
   if (error) toast.error(error)
 
@@ -86,34 +105,52 @@ export default function Reports() {
       </div>
 
       <div className="toolbar">
-        <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
-          <label htmlFor="date-from" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', fontWeight: 600 }}>From</label>
-          <input
-            id="date-from"
-            type="date"
-            className="search-input"
-            style={{ width: 'auto' }}
-            value={dateFrom}
-            max={dateTo || undefined}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
-        </div>
-        <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
-          <label htmlFor="date-to" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', fontWeight: 600 }}>To</label>
-          <input
-            id="date-to"
-            type="date"
-            className="search-input"
-            style={{ width: 'auto' }}
-            value={dateTo}
-            min={dateFrom || undefined}
-            onChange={(e) => setDateTo(e.target.value)}
-          />
-        </div>
-        {(dateFrom || dateTo) && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDateFrom(''); setDateTo('') }}>
-            Clear dates
-          </button>
+        {tab === 'depreciation' ? (
+          <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
+            <label htmlFor="fy-select" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', fontWeight: 600 }}>Financial Year</label>
+            <select
+              id="fy-select"
+              className="select"
+              value={fy}
+              onChange={(e) => setFy(e.target.value)}
+            >
+              {getFyOptions().map((opt) => (
+                <option key={opt} value={opt}>FY {opt}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <>
+            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
+              <label htmlFor="date-from" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', fontWeight: 600 }}>From</label>
+              <input
+                id="date-from"
+                type="date"
+                className="search-input"
+                style={{ width: 'auto' }}
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
+              <label htmlFor="date-to" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', fontWeight: 600 }}>To</label>
+              <input
+                id="date-to"
+                type="date"
+                className="search-input"
+                style={{ width: 'auto' }}
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDateFrom(''); setDateTo('') }}>
+                Clear dates
+              </button>
+            )}
+          </>
         )}
       </div>
 

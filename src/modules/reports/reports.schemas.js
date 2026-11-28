@@ -37,3 +37,8 @@ export const verificationProgressQuerySchema = z.object({
 export const assetUtilizationQuerySchema = z.object({
   org_unit_id: z.string().uuid().optional(),
 });
+
+export const depreciationQuerySchema = z.object({
+  fy: z.string().regex(/^\d{4}(-\d{2})?$/, 'Use YYYY-YY format (e.g. 2025-26)').optional(),
+  org_unit_id: z.string().uuid().optional(),
+});

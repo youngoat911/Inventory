@@ -1,0 +1,1 @@
+export const SMALL_VALUE_ASSET_LIMIT = 2000;

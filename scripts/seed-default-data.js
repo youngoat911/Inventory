@@ -13,6 +13,7 @@ const ids = {
   orgUnit: 'e0000000-0000-4000-8000-000000000001',
   user: 'e0000000-0000-4000-8000-000000000002',
   role: 'e0000000-0000-4000-8000-000000000003',
+  level1PlantAndMachinery: '10000000-0000-4000-8000-000000000008',
   category: 'e0000000-0000-4000-8000-000000000010',
   location: 'e0000000-0000-4000-8000-000000000020',
   asset: 'e0000000-0000-4000-8000-000000000030',
@@ -57,10 +58,13 @@ try {
   );
 
   await client.query(
-    `INSERT INTO categories (id, name, default_low_stock_threshold, default_loan_days, max_renewals)
-     VALUES ($1, 'General Equipment', 2, 7, 1)
+    `INSERT INTO categories (
+       id, name, parent_id, level, code, is_system, is_legacy, sort_order,
+       default_low_stock_threshold, default_loan_days, max_renewals
+     )
+     VALUES ($1, $2, 2, '01', false, false, 1, 2, 7, 1)
      ON CONFLICT (id) DO NOTHING`,
-    [ids.category]
+    [ids.category, ids.level1PlantAndMachinery]
   );
 
   await client.query(
