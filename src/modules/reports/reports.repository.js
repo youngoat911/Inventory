@@ -20,6 +20,23 @@ export async function getDashboardSummary(borrowerId = null, orgIds = null) {
        AND ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as issued_items,
       (SELECT COUNT(*) FROM assets WHERE is_issuable
        AND ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as loanable_count,
+      (SELECT COALESCE(SUM(cost), 0) FROM assets
+       WHERE ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as total_value,
+      (SELECT COALESCE(json_agg(s ORDER BY s.sort_order), '[]'::json) FROM (
+         SELECT m.code, m.label, m.color, m.sort_order, COUNT(a.id)::int AS count
+         FROM asset_status_master m
+         JOIN assets a ON a.status = m.code
+           AND ($2::uuid[] IS NULL OR a.owner_org_id = ANY($2))
+         WHERE m.kind = 'status'
+         GROUP BY m.code, m.label, m.color, m.sort_order
+       ) s) as by_status,
+      (SELECT COALESCE(json_agg(b ORDER BY b.count DESC), '[]'::json) FROM (
+         SELECT COALESCE(budget_type, 'unspecified') AS budget_type, COUNT(*)::int AS count,
+                COALESCE(SUM(cost), 0)::float8 AS value
+         FROM assets
+         WHERE ($2::uuid[] IS NULL OR owner_org_id = ANY($2))
+         GROUP BY 1
+       ) b) as by_budget,
       0 as pending_verifications,
       0 as pending_disposals,
       0 as active_alerts
