@@ -32,7 +32,7 @@ export default function Login() {
     <div className="auth-shell">
       <div className="auth-panel">
         <div className="auth-brand">Gymkhana Inventory</div>
-        <p className="auth-sub">Sign in to manage equipment and loans.</p>
+        <p className="auth-sub">Sign in to manage equipment and inventory.</p>
         {error ? <div className="error-banner">{error}</div> : null}
         <form className="form" onSubmit={handleSubmit}>
           <div className="field">

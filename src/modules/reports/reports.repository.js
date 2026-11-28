@@ -16,6 +16,10 @@ export async function getDashboardSummary(borrowerId = null, orgIds = null) {
        AND ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as low_stock_count,
       (SELECT COUNT(*) FROM assets WHERE status = 'in_maintenance'
        AND ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as open_maintenance,
+      (SELECT COUNT(*) FROM assets WHERE COALESCE(issued_to, '') <> ''
+       AND ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as issued_items,
+      (SELECT COUNT(*) FROM assets WHERE is_issuable
+       AND ($2::uuid[] IS NULL OR owner_org_id = ANY($2))) as loanable_count,
       0 as pending_verifications,
       0 as pending_disposals,
       0 as active_alerts

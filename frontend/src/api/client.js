@@ -174,22 +174,6 @@ export const assetsApi = {
   generateQr: (id) => api(`/assets/${id}/qr`, { method: 'POST', body: {} }),
 }
 
-export const issuesApi = {
-  list: (params = {}) => api(`/issues${qs(params)}`),
-  overdue: () => api('/issues/overdue'),
-  dropped: () => api('/issues/dropped'),
-  get: (id) => api(`/issues/${id}`),
-  create: (body) => api('/issues', { method: 'POST', body }),
-  update: (id, body) => api(`/issues/${id}`, { method: 'PATCH', body }),
-  remove: (id) => api(`/issues/${id}`, { method: 'DELETE' }),
-  issue: (id, body = {}) => api(`/issues/${id}/issue`, { method: 'POST', body }),
-  drop: (id, body) => api(`/issues/${id}/drop`, { method: 'POST', body }),
-  receive: (id, body) => api(`/issues/${id}/receive`, { method: 'POST', body }),
-  return: (id, body) => api(`/issues/${id}/return`, { method: 'POST', body }),
-  cancel: (id, body) => api(`/issues/${id}/cancel`, { method: 'POST', body }),
-  renew: (id, body = {}) => api(`/issues/${id}/renew`, { method: 'POST', body }),
-}
-
 export const alertsApi = {
   list: (params = {}) => api(`/alerts${qs(params)}`),
   summary: (params = {}) => api(`/alerts/summary${qs(params)}`),
@@ -210,8 +194,6 @@ export const dashboardApi = {
 
 export const reportsApi = {
   assetInventory: (params = {}) => api(`/reports/asset-inventory${qs(params)}`),
-  borrowingHistory: (params = {}) => api(`/reports/borrowing-history${qs(params)}`),
-  overdueLoans: (params = {}) => api(`/reports/overdue-loans${qs(params)}`),
   maintenanceCosts: (params = {}) => api(`/reports/maintenance-costs${qs(params)}`),
   disposalSummary: (params = {}) => api(`/reports/disposal-summary${qs(params)}`),
   verificationProgress: (params = {}) => api(`/reports/verification-progress${qs(params)}`),
@@ -267,23 +249,6 @@ export const purchasesApi = {
   updateItem: (id, itemId, body) =>
     api(`/purchases/${id}/items/${itemId}`, { method: 'PATCH', body }),
   removeItem: (id, itemId) => api(`/purchases/${id}/items/${itemId}`, { method: 'DELETE' }),
-}
-
-export const dropBoxesApi = {
-  list: (params = {}) => api(`/drop-boxes${qs(params)}`),
-  get: (id) => api(`/drop-boxes/${id}`),
-  create: (body) => api('/drop-boxes', { method: 'POST', body }),
-  update: (id, body) => api(`/drop-boxes/${id}`, { method: 'PATCH', body }),
-  remove: (id) => api(`/drop-boxes/${id}`, { method: 'DELETE' }),
-}
-
-export const blocksApi = {
-  list: (params = {}) => api(`/blocks${qs(params)}`),
-  get: (id) => api(`/blocks/${id}`),
-  activeForUser: (userId) => api(`/blocks/active/${userId}`),
-  create: (body) => api('/blocks', { method: 'POST', body }),
-  update: (id, body) => api(`/blocks/${id}`, { method: 'PATCH', body }),
-  remove: (id) => api(`/blocks/${id}`, { method: 'DELETE' }),
 }
 
 export const transfersApi = {

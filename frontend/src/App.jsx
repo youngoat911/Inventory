@@ -6,14 +6,12 @@ import { SkeletonLine } from './components/Skeleton'
 
 const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Assets         = lazy(() => import('./pages/Assets'))
-const Issues         = lazy(() => import('./pages/Issues'))
 const Transfers      = lazy(() => import('./pages/Transfers'))
 const Alerts         = lazy(() => import('./pages/Alerts'))
 const Catalog        = lazy(() => import('./pages/Catalog'))
 const Purchases      = lazy(() => import('./pages/Purchases'))
 const Vendors        = lazy(() => import('./pages/Vendors'))
 const Users          = lazy(() => import('./pages/Users'))
-const Blocks         = lazy(() => import('./pages/Blocks'))
 const Reports        = lazy(() => import('./pages/Reports'))
 const AuditLog       = lazy(() => import('./pages/AuditLog'))
 const Login          = lazy(() => import('./pages/Login'))
@@ -78,7 +76,6 @@ export default function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="assets" element={<Assets />} />
-          <Route path="issues" element={<Issues />} />
           <Route path="transfers" element={<Transfers />} />
           <Route path="disposals" element={<Disposals />} />
           <Route path="maintenance" element={<Maintenance />} />
@@ -88,11 +85,13 @@ export default function App() {
           <Route path="purchases" element={<Purchases />} />
           <Route path="vendors" element={<AdminRoute><Vendors /></AdminRoute>} />
           <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
-          <Route path="blocks" element={<AdminRoute><Blocks /></AdminRoute>} />
           <Route path="verifications" element={<AdminRoute><Verifications /></AdminRoute>} />
           <Route path="reports" element={<AdminRoute><Reports /></AdminRoute>} />
           <Route path="audit-log" element={<AuditRoute><AuditLog /></AuditRoute>} />
-          <Route path="drop-boxes" element={<Navigate to="/catalog?tab=drop-boxes" replace />} />
+          {/* Loans / borrowing were removed; keep old links from 404-ing */}
+          <Route path="issues" element={<Navigate to="/assets" replace />} />
+          <Route path="blocks" element={<Navigate to="/" replace />} />
+          <Route path="drop-boxes" element={<Navigate to="/" replace />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

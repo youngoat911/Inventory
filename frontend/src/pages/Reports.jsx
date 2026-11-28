@@ -8,8 +8,6 @@ import { usePageTitle } from '../hooks/usePageTitle'
 
 const TABS = [
   { id: 'inventory',    label: 'Inventory' },
-  { id: 'borrowing',    label: 'Borrowing' },
-  { id: 'overdue',      label: 'Overdue' },
   { id: 'maintenance',  label: 'Maintenance costs' },
   { id: 'utilization',  label: 'Utilization' },
   { id: 'depreciation', label: 'Depreciation' },
@@ -71,8 +69,6 @@ export default function Reports() {
   const { data, loading, error } = useFetch(() => {
     switch (tab) {
       case 'inventory':    return reportsApi.assetInventory(params)
-      case 'borrowing':    return reportsApi.borrowingHistory(params)
-      case 'overdue':      return reportsApi.overdueLoans(params)
       case 'maintenance':  return reportsApi.maintenanceCosts(params)
       case 'utilization':  return reportsApi.assetUtilization(params)
       case 'depreciation': return reportsApi.depreciation({ fy })

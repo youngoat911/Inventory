@@ -9,7 +9,6 @@ import NotificationIcon from './NotificationIcon'
 const links = [
   { to: '/', label: 'Dashboard', icon: 'home', end: true },
   { to: '/assets', label: 'Assets', icon: 'box' },
-  { to: '/issues', label: 'Borrowing', icon: 'hand-helping' },
   { to: '/transfers', label: 'Transfers', icon: 'arrow-left-right' },
   { to: '/disposals', label: 'Disposals', icon: 'archive' },
   { to: '/maintenance', label: 'Maintenance', icon: 'wrench' },
@@ -19,7 +18,6 @@ const links = [
   { to: '/purchases', label: 'Purchases', icon: 'shopping-cart' },
   { to: '/vendors', label: 'Vendors', icon: 'truck', adminOnly: true },
   { to: '/users', label: 'Users', icon: 'users', adminOnly: true },
-  { to: '/blocks', label: 'Blocks', icon: 'ban', adminOnly: true },
   { to: '/verifications', label: 'Verifications', icon: 'clipboard-check', adminOnly: true },
   { to: '/reports', label: 'Reports', icon: 'bar-chart-2', adminOnly: true },
   { to: '/audit-log', label: 'Audit Log', icon: 'scroll-text', auditAccessOnly: true },

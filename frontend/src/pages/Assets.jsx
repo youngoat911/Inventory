@@ -657,6 +657,16 @@ export default function Assets() {
               </div>
             </div>
             <div className="field">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.is_issuable}
+                  onChange={(e) => updateForm('is_issuable', e.target.checked)}
+                />{' '}
+                Can be loaned
+              </label>
+            </div>
+            <div className="field">
               <label htmlFor="description">Description</label>
               <textarea
                 id="description"
@@ -701,6 +711,7 @@ export default function Assets() {
               <strong>Invoice:</strong> {detailItem.invoice_no || '—'}
               {detailItem.invoice_date ? ` dated ${formatDate(detailItem.invoice_date)}` : ''}
             </div>
+            <div><strong>Can be loaned:</strong> {detailItem.is_issuable ? 'Yes' : 'No'}</div>
             <div><strong>Status / Condition:</strong> {statusMeta(detailItem.status)?.label || detailItem.status} / {conditionMeta(detailItem.condition)?.label || detailItem.condition}</div>
             <div>
               <strong>Cost:</strong>{' '}
