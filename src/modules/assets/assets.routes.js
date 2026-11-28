@@ -4,6 +4,7 @@ import {
   createAssetSchema, 
   updateAssetSchema, 
   batchCreateSchema,
+  importSchema,
   idSchema,
   qrTokenSchema,
   listQuerySchema,
@@ -30,6 +31,7 @@ router.get('/qr/:qrToken', validate(qrTokenSchema, 'params'), controller.resolve
 
 // CRUD operations
 router.post('/', requireAdmin, validate(createAssetSchema, 'body'), assignAdminOrg('owner_org_id'), requireScopedBodyResource('location', 'location_id'), controller.create);
+router.post('/import', requireAdmin, validate(importSchema, 'body'), controller.importAssets);
 router.post('/batch-create', requireAdmin, validate(batchCreateSchema, 'body'), assignAdminOrg('owner_org_id', 'assets'), controller.batchCreate);
 router.get('/:id', validate(idSchema, 'params'), requireScopedResource('asset'), controller.getById);
 router.patch('/:id', requireAdmin, validate(idSchema, 'params'), requireScopedResource('asset'), validate(updateAssetSchema, 'body'), controller.update);

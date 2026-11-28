@@ -297,7 +297,7 @@ export async function exportAssets(filters) {
       'Location': asset.location_name || '',
       'Responsible User': asset.responsible_user_name || '',
       'Can Be Loaned': asset.is_issuable ? 'Yes' : 'No',
-      'Warranty Until': asset.warranty_until || '',
+      'Warranty Until': asset.warranty_until ? formatDate(asset.warranty_until) : '',
       'Is Institute Asset': asset.is_institute_asset ? 'Yes' : 'No',
       'Issued To': asset.issued_to || '',
       'Person In-charge': asset.incharge_name || '',

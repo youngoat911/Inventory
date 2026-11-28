@@ -1,5 +1,6 @@
 import * as service from './assets.service.js';
-import { isAdmin, scopeOrgFilters } from '../../middleware/authorize.js';
+import { getAdminOrgIds, isAdmin, scopeOrgFilters } from '../../middleware/authorize.js';
+import { importAssets as runImport } from './assets.import.js';
 
 export async function create(req, res, next) {
   try {
@@ -14,6 +15,17 @@ export async function batchCreate(req, res, next) {
   try {
     const assets = await service.batchCreate(req.validated.body.assets);
     res.status(201).json({ data: assets });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function importAssets(req, res, next) {
+  try {
+    const { rows, dry_run: dryRun } = req.validated.body;
+    const result = await runImport(rows, { dryRun, orgIds: getAdminOrgIds(req.user) });
+    const status = result.errors.length > 0 ? 422 : result.committed ? 201 : 200;
+    res.status(status).json({ data: result });
   } catch (error) {
     next(error);
   }

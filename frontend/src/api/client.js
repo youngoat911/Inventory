@@ -121,6 +121,7 @@ export async function api(path, { method = 'GET', body, auth = true, headers = {
     err.status = res.status
     err.code = payload?.error?.code
     err.details = payload?.error?.details || []
+    err.payload = payload
     throw err
   }
 
@@ -167,6 +168,8 @@ export const assetsApi = {
   get: (id) => api(`/assets/${id}`),
   create: (body) => api('/assets', { method: 'POST', body }),
   batchCreate: (assets) => api('/assets/batch-create', { method: 'POST', body: { assets } }),
+  importRows: (rows, dryRun = false) =>
+    api('/assets/import', { method: 'POST', body: { rows, dry_run: dryRun } }),
   update: (id, body) => api(`/assets/${id}`, { method: 'PATCH', body }),
   remove: (id) => api(`/assets/${id}`, { method: 'DELETE' }),
   export: (params = {}) => api(`/assets/export${qs(params)}`),

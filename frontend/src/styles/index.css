@@ -2084,3 +2084,32 @@ tr:hover td {
 .view-all-link:hover {
   text-decoration: underline;
 }
+
+/* CSV import drop zone */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 9rem;
+  padding: 1.25rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out);
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible,
+.drop-zone-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.modal.modal-lg {
+  width: min(760px, 100%);
+}

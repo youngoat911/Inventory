@@ -5,6 +5,7 @@ import { BUDGET_TYPES, budgetTypeLabel } from '../constants'
 import { findCategoryNode, isAssetCategoryLeaf, namedCategoryLevels } from '../categoryTree'
 import CascadingCategoryPicker from '../components/CascadingCategoryPicker'
 import EmptyState from '../components/EmptyState'
+import ImportAssetsModal from '../components/ImportAssetsModal'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import { SkeletonTable } from '../components/Skeleton'
@@ -75,6 +76,7 @@ export default function Assets() {
   const [editItem, setEditItem] = useState(null)
   const [detailItem, setDetailItem] = useState(null)
   const [qrInfo, setQrInfo] = useState(null)
+  const [showImport, setShowImport] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
@@ -272,9 +274,14 @@ export default function Assets() {
             Export CSV
           </button>
           {isAdmin ? (
-            <button type="button" className="btn btn-primary" onClick={() => setShowCreate(true)}>
-              Add asset
-            </button>
+            <>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowImport(true)}>
+                Import CSV
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => setShowCreate(true)}>
+                Add asset
+              </button>
+            </>
           ) : null}
         </div>
       </div>
@@ -748,6 +755,16 @@ export default function Assets() {
             </div>
           </div>
         </Modal>
+      ) : null}
+
+      {showImport ? (
+        <ImportAssetsModal
+          onClose={() => setShowImport(false)}
+          onImported={() => {
+            setPage(1)
+            load()
+          }}
+        />
       ) : null}
 
       {qrInfo ? (

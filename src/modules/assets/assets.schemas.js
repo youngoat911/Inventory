@@ -77,6 +77,14 @@ export const batchCreateSchema = z.object({
   assets: z.array(createAssetSchema).min(1, 'At least one asset is required'),
 });
 
+export const importSchema = z.object({
+  rows: z
+    .array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])))
+    .min(1, 'The file has no data rows')
+    .max(2000, 'At most 2000 rows can be imported at once'),
+  dry_run: z.boolean().default(false),
+});
+
 export const idSchema = z.object({
   id: z.string().uuid('Invalid asset ID'),
 });

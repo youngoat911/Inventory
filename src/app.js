@@ -14,7 +14,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware to parse JSON request bodies
+// Middleware to parse JSON request bodies. Spreadsheet imports get a larger
+// limit; registering it first means the default parser skips those requests.
+app.use('/api/v1/assets/import', express.json({ limit: '10mb' }));
 app.use(express.json());
 
 // CORS middleware
