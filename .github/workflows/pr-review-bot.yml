@@ -88,18 +88,25 @@ jobs:
               ]
             }' > request.json
 
+          echo "Request size: $(wc -c < request.json) bytes"
+
           HTTP=$(curl -sS -o response.json -w '%{http_code}' \
             https://models.github.ai/inference/chat/completions \
+            -H "Accept: application/json" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/json" \
-            -d @request.json)
+            -d @request.json) || HTTP="curl-failed"
 
-          if [ "$HTTP" != "200" ]; then
-            echo "::warning::GitHub Models returned HTTP $HTTP"
-            cat response.json
-            printf 'Review could not run this time (HTTP %s, possibly the free daily limit). It will retry on the next push.\n' "$HTTP" > review.md
-          else
+          echo "GitHub Models HTTP status: $HTTP"
+
+          if [ "$HTTP" = "200" ] && jq -e '.choices[0].message.content' response.json > /dev/null 2>&1; then
             jq -r '.choices[0].message.content' response.json > review.md
+          else
+            echo "::warning::GitHub Models did not return a review (HTTP $HTTP)"
+            echo "----- response (first 1000 bytes) -----"
+            head -c 1000 response.json 2>/dev/null || true
+            echo
+            printf 'Review could not run this time (HTTP %s). It will retry on the next push.\n' "$HTTP" > review.md
           fi
 
       - name: Post or update the review comment
