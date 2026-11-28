@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -8,19 +8,19 @@ import NotificationIcon from './NotificationIcon'
 
 const links = [
   { to: '/', label: 'Dashboard', icon: 'home', end: true },
-  { to: '/assets', label: 'Assets', icon: 'box' },
-  { to: '/transfers', label: 'Transfers', icon: 'arrow-left-right' },
-  { to: '/disposals', label: 'Disposals', icon: 'archive' },
-  { to: '/maintenance', label: 'Maintenance', icon: 'wrench' },
-  { to: '/alerts', label: 'Alerts', icon: 'bell' },
-  { to: '/notifications', label: 'Notifications', icon: 'inbox' },
-  { to: '/catalog', label: 'Catalog', icon: 'layout-grid' },
-  { to: '/purchases', label: 'Purchases', icon: 'shopping-cart' },
-  { to: '/vendors', label: 'Vendors', icon: 'truck', adminOnly: true },
-  { to: '/users', label: 'Users', icon: 'users', adminOnly: true },
-  { to: '/verifications', label: 'Verifications', icon: 'clipboard-check', adminOnly: true },
-  { to: '/reports', label: 'Reports', icon: 'bar-chart-2', adminOnly: true },
-  { to: '/audit-log', label: 'Audit Log', icon: 'scroll-text', auditAccessOnly: true },
+  { to: '/assets', label: 'Assets', icon: 'box', group: 'Inventory' },
+  { to: '/catalog', label: 'Catalog', icon: 'layout-grid', group: 'Inventory' },
+  { to: '/purchases', label: 'Purchases', icon: 'shopping-cart', group: 'Inventory' },
+  { to: '/vendors', label: 'Vendors', icon: 'truck', adminOnly: true, group: 'Inventory' },
+  { to: '/transfers', label: 'Transfers', icon: 'arrow-left-right', group: 'Operations' },
+  { to: '/maintenance', label: 'Maintenance', icon: 'wrench', group: 'Operations' },
+  { to: '/disposals', label: 'Disposals', icon: 'archive', group: 'Operations' },
+  { to: '/verifications', label: 'Verifications', icon: 'clipboard-check', adminOnly: true, group: 'Operations' },
+  { to: '/alerts', label: 'Alerts', icon: 'bell', group: 'Activity' },
+  { to: '/notifications', label: 'Notifications', icon: 'inbox', group: 'Activity' },
+  { to: '/reports', label: 'Reports', icon: 'bar-chart-2', adminOnly: true, group: 'Activity' },
+  { to: '/audit-log', label: 'Audit Log', icon: 'scroll-text', auditAccessOnly: true, group: 'Activity' },
+  { to: '/users', label: 'Users', icon: 'users', adminOnly: true, group: 'Admin' },
 ]
 
 export default function Layout() {
@@ -145,9 +145,12 @@ export default function Layout() {
         </div>
 
         <nav className="nav" id="primary-navigation" aria-label="Primary navigation">
-          {visibleLinks.map((link) => (
+          {visibleLinks.map((link, i) => (
+            <Fragment key={link.to}>
+            {link.group && link.group !== visibleLinks[i - 1]?.group ? (
+              <div className="nav-group-label" aria-hidden="true">{link.group}</div>
+            ) : null}
             <NavLink
-              key={link.to}
               to={link.to}
               end={link.end}
               onClick={() => setOpenPath(null)}
@@ -160,6 +163,7 @@ export default function Layout() {
                 <span className="nav-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
               )}
             </NavLink>
+            </Fragment>
           ))}
         </nav>
 

@@ -13,6 +13,43 @@ const TABS = [
   { id: 'depreciation', label: 'Depreciation' },
 ]
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const HIDDEN_COLUMNS = new Set(['created_at', 'updated_at', 'total_count', 'qr_token'])
+
+/** Columns worth showing to people: no internal ids or bookkeeping timestamps. */
+function visibleColumns(rows) {
+  if (!rows.length) return []
+  return Object.keys(rows[0]).filter((key) => {
+    if (HIDDEN_COLUMNS.has(key) || key === 'id' || key.endsWith('_id')) return false
+    return !rows.every((r) => r[key] == null || UUID_RE.test(String(r[key])))
+  })
+}
+
+const COLUMN_LABELS = {
+  asset_tag: 'Unique number',
+  is_issuable: 'Can be loaned',
+  is_institute_asset: 'Institute asset',
+  incharge_name: 'Person in-charge',
+  incharge_phone: 'In-charge phone',
+  category_name: 'Category',
+  owner_org_name: 'Owner',
+  location_name: 'Location',
+}
+
+function columnLabel(key) {
+  if (COLUMN_LABELS[key]) return COLUMN_LABELS[key]
+  const label = key.replace(/_/g, ' ')
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+function formatCell(value) {
+  if (value == null || value === '') return '—'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  const s = String(value)
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10)
+  return s
+}
+
 function getDefaultFy() {
   const now = new Date()
   const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
@@ -83,9 +120,14 @@ export default function Reports() {
     ? Math.max(...rows.map((r) => r.total_count ?? r.count ?? r.total ?? 0))
     : 0
 
+  const columns = visibleColumns(rows)
+
   function handleExport() {
     if (!rows.length) { toast.warn('No data to export'); return }
-    downloadCsv(rows, `${tab}-report.csv`)
+    downloadCsv(
+      rows.map((r) => Object.fromEntries(columns.map((c) => [columnLabel(c), formatCell(r[c])]))),
+      `${tab}-report.csv`
+    )
   }
 
   return (
@@ -182,25 +224,27 @@ export default function Reports() {
             </div>
           )}
 
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  {Object.keys(rows[0]).map((k) => (
-                    <th scope="col" key={k}>{k.replace(/_/g, ' ')}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={i}>
-                    {Object.values(row).map((v, j) => (
-                      <td key={j}>{v == null ? '—' : String(v)}</td>
+          <div className="panel">
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    {columns.map((k) => (
+                      <th scope="col" key={k}>{columnLabel(k)}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i}>
+                      {columns.map((k) => (
+                        <td key={k}>{formatCell(row[k])}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}

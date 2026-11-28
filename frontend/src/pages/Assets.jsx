@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { assetsApi, categoriesApi, locationsApi } from '../api/client'
-import { BUDGET_TYPES, budgetTypeLabel } from '../constants'
-import { findCategoryNode, isAssetCategoryLeaf, namedCategoryLevels } from '../categoryTree'
+import { BUDGET_TYPES } from '../constants'
+import { findCategoryNode, isAssetCategoryLeaf } from '../categoryTree'
 import CascadingCategoryPicker from '../components/CascadingCategoryPicker'
+import AssetDetails from '../components/AssetDetails'
+import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import ImportAssetsModal from '../components/ImportAssetsModal'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import RowMenu from '../components/RowMenu'
 import { SkeletonTable } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../auth/AuthContext'
@@ -77,6 +80,7 @@ export default function Assets() {
   const [detailItem, setDetailItem] = useState(null)
   const [qrInfo, setQrInfo] = useState(null)
   const [showImport, setShowImport] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
@@ -196,7 +200,6 @@ export default function Assets() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this asset?')) return
     try {
       await assetsApi.remove(id)
       await load()
@@ -323,7 +326,7 @@ export default function Assets() {
       <div className="panel">
         <div className="table-wrap">
           {loading ? (
-            <SkeletonTable rows={8} cols={7} />
+            <SkeletonTable rows={8} cols={6} />
           ) : items.length === 0 ? (
             <EmptyState
               icon="box"
@@ -336,19 +339,20 @@ export default function Assets() {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
-                  <th scope="col">Location / Issued to</th>
+                  <th scope="col">Location / custody</th>
                   <th scope="col">Status</th>
                   <th scope="col">Condition</th>
                   <th scope="col">Qty</th>
-                  <th scope="col">Tracking</th>
-                  <th scope="col">Actions</th>
+                  <th scope="col"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((asset) => (
                   <tr key={asset.id}>
                     <td data-label="Name" data-card-title>
-                      <div>{asset.name}</div>
+                      <button type="button" className="link-button" onClick={() => setDetailItem(asset)}>
+                        {asset.name}
+                      </button>
                       <div className="muted">
                         {asset.asset_tag || asset.brand_model || asset.id.slice(0, 8)}
                       </div>
@@ -361,9 +365,15 @@ export default function Assets() {
                         ) : null}
                       </div>
                     </td>
-                    <td data-label="Location / Issued to">
-                      <div>{asset.location_name || <span className="muted">—</span>}</div>
-                      {asset.issued_to ? <div className="muted">{asset.issued_to}</div> : null}
+                    <td data-label="Location" data-wide>
+                      <div className="cell-stack">
+                        <div>{asset.location_name || <span className="muted">—</span>}</div>
+                        {asset.issued_to || asset.incharge_name ? (
+                          <div className="muted" style={{ fontSize: '0.85rem' }}>
+                            {[asset.issued_to, asset.incharge_name].filter(Boolean).join(' · ')}
+                          </div>
+                        ) : null}
+                      </div>
                     </td>
                     <td data-label="Status">
                       <StatusBadge value={asset.status} meta={statusMeta(asset.status)} />
@@ -371,41 +381,33 @@ export default function Assets() {
                     <td data-label="Condition">
                       <StatusBadge value={asset.condition} meta={conditionMeta(asset.condition)} />
                     </td>
-                    <td data-label="Qty">{asset.quantity}</td>
-                    <td className="muted" data-label="Tracking">{asset.tracking}</td>
+                    <td data-label="Qty">
+                      <span>
+                        {asset.quantity}
+                        {asset.tracking === 'quantity' ? <span className="muted" style={{ fontSize: '0.8rem' }}> bulk</span> : null}
+                      </span>
+                    </td>
                     <td data-actions>
                       <div className="row-actions">
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetailItem(asset)}>
-                          Details
-                        </button>
                         {isAdmin ? (
                           <>
                             <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(asset)}>
                               Edit
                             </button>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => navigate(`/transfers?asset_id=${asset.id}`)}
-                            >
-                              Transfer
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => handleGenerateQr(asset.id)}
-                            >
-                              QR
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleDelete(asset.id)}
-                            >
-                              Delete
-                            </button>
+                            <RowMenu
+                              items={[
+                                { label: 'View details', onClick: () => setDetailItem(asset) },
+                                { label: 'Transfer / hand over', onClick: () => navigate(`/transfers?asset_id=${asset.id}`) },
+                                { label: 'Generate QR', onClick: () => handleGenerateQr(asset.id) },
+                                { label: 'Delete', danger: true, onClick: () => setDeleteTarget(asset) },
+                              ]}
+                            />
                           </>
-                        ) : null}
+                        ) : (
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetailItem(asset)}>
+                            Details
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -419,7 +421,8 @@ export default function Assets() {
 
       {showCreate || editItem ? (
         <Modal
-          title={editItem ? 'Edit asset' : 'Add asset'}
+          size="lg"
+          title={editItem ? `Edit ${editItem.name}` : 'Add asset'}
           onClose={() => {
             setShowCreate(false)
             setEditItem(null)
@@ -455,6 +458,8 @@ export default function Assets() {
             onSubmit={editItem ? handleUpdate : handleCreate}
           >
             {error ? <div className="error-banner" role="alert">{error}</div> : null}
+
+            <div className="form-section">Item</div>
             <div className="form-row">
               <div className="field">
                 <label htmlFor="name">Name</label>
@@ -463,6 +468,7 @@ export default function Assets() {
                   value={form.name}
                   onChange={(e) => updateForm('name', e.target.value)}
                   required
+                  autoFocus
                 />
               </div>
               <div className="field">
@@ -471,7 +477,7 @@ export default function Assets() {
                   id="asset_tag"
                   value={form.asset_tag}
                   onChange={(e) => updateForm('asset_tag', e.target.value)}
-                  placeholder={editItem ? '' : 'Auto-generated if left blank'}
+                  placeholder={editItem ? '' : 'Auto-generated if blank'}
                 />
               </div>
             </div>
@@ -484,12 +490,138 @@ export default function Assets() {
             />
             <div className="form-row">
               <div className="field">
+                <label htmlFor="brand_model">Brand / model</label>
+                <input
+                  id="brand_model"
+                  value={form.brand_model}
+                  onChange={(e) => updateForm('brand_model', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="serial_no">Serial no.</label>
+                <input
+                  id="serial_no"
+                  value={form.serial_no}
+                  onChange={(e) => updateForm('serial_no', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-section">Stock &amp; status</div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="tracking">Tracking</label>
+                <select
+                  id="tracking"
+                  value={form.tracking}
+                  onChange={(e) => {
+                    updateForm('tracking', e.target.value)
+                    if (e.target.value === 'individual') updateForm('quantity', 1)
+                  }}
+                >
+                  <option value="individual">Individual item (qty 1)</option>
+                  <option value="quantity">Bulk / consumable</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="quantity">Quantity</label>
+                <input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  value={form.quantity}
+                  disabled={form.tracking === 'individual'}
+                  onChange={(e) => updateForm('quantity', e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="condition">Condition</label>
+                <select
+                  id="condition"
+                  value={form.condition}
+                  onChange={(e) => updateForm('condition', e.target.value)}
+                >
+                  {conditions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                  {form.condition && !conditionMeta(form.condition) ? <option value={form.condition}>{form.condition}</option> : null}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="status">Status</label>
+                <select
+                  id="status"
+                  value={form.status}
+                  onChange={(e) => updateForm('status', e.target.value)}
+                >
+                  {statuses.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
+                  {form.status && !statusMeta(form.status) ? <option value={form.status}>{form.status}</option> : null}
+                </select>
+              </div>
+            </div>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={form.is_issuable}
+                onChange={(e) => updateForm('is_issuable', e.target.checked)}
+              />
+              Can be loaned
+            </label>
+
+            <div className="form-section">Location &amp; custody</div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="location_id">Location</label>
+                <select
+                  id="location_id"
+                  value={form.location_id}
+                  onChange={(e) => updateForm('location_id', e.target.value)}
+                >
+                  <option value="">Not set</option>
+                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="issued_to">Issued to</label>
+                <input
+                  id="issued_to"
+                  value={form.issued_to}
+                  onChange={(e) => updateForm('issued_to', e.target.value)}
+                  placeholder="Person, lab or department"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="incharge_name">Person in-charge</label>
+                <input
+                  id="incharge_name"
+                  value={form.incharge_name}
+                  onChange={(e) => updateForm('incharge_name', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="incharge_phone">In-charge phone no.</label>
+                <input
+                  id="incharge_phone"
+                  value={form.incharge_phone}
+                  onChange={(e) => updateForm('incharge_phone', e.target.value)}
+                  type="tel"
+                  inputMode="tel"
+                />
+              </div>
+            </div>
+
+            <div className="form-section">Purchase &amp; budget</div>
+            <div className="form-row">
+              <div className="field">
                 <label htmlFor="cost">Cost (₹)</label>
                 <input
                   id="cost"
                   type="number"
                   min="0"
                   step="0.01"
+                  inputMode="decimal"
                   value={form.cost}
                   onChange={(e) => updateForm('cost', e.target.value)}
                 />
@@ -527,107 +659,20 @@ export default function Assets() {
             })()}
             <div className="form-row">
               <div className="field">
-                <label htmlFor="tracking">Tracking</label>
-                <select
-                  id="tracking"
-                  value={form.tracking}
-                  onChange={(e) => updateForm('tracking', e.target.value)}
-                >
-                  <option value="individual">Individual</option>
-                  <option value="quantity">Quantity</option>
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="quantity">Quantity</label>
+                <label htmlFor="invoice_no">Invoice number</label>
                 <input
-                  id="quantity"
-                  type="number"
-                  min="0"
-                  value={form.quantity}
-                  onChange={(e) => updateForm('quantity', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="field">
-                <label htmlFor="condition">Condition</label>
-                <select
-                  id="condition"
-                  value={form.condition}
-                  onChange={(e) => updateForm('condition', e.target.value)}
-                >
-                  {conditions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
-                  {form.condition && !conditionMeta(form.condition) ? <option value={form.condition}>{form.condition}</option> : null}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="status">Status</label>
-                <select
-                  id="status"
-                  value={form.status}
-                  onChange={(e) => updateForm('status', e.target.value)}
-                >
-                  {statuses.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
-                  {form.status && !statusMeta(form.status) ? <option value={form.status}>{form.status}</option> : null}
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="field">
-                <label htmlFor="brand_model">Brand / model</label>
-                <input
-                  id="brand_model"
-                  value={form.brand_model}
-                  onChange={(e) => updateForm('brand_model', e.target.value)}
+                  id="invoice_no"
+                  value={form.invoice_no}
+                  onChange={(e) => updateForm('invoice_no', e.target.value)}
                 />
               </div>
               <div className="field">
-                <label htmlFor="serial_no">Serial no.</label>
+                <label htmlFor="invoice_date">Invoice date</label>
                 <input
-                  id="serial_no"
-                  value={form.serial_no}
-                  onChange={(e) => updateForm('serial_no', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="field">
-                <label htmlFor="location_id">Location</label>
-                <select
-                  id="location_id"
-                  value={form.location_id}
-                  onChange={(e) => updateForm('location_id', e.target.value)}
-                >
-                  <option value="">Not set</option>
-                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="issued_to">Issued to</label>
-                <input
-                  id="issued_to"
-                  value={form.issued_to}
-                  onChange={(e) => updateForm('issued_to', e.target.value)}
-                  placeholder="Person, lab or department"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="field">
-                <label htmlFor="incharge_name">Person in-charge</label>
-                <input
-                  id="incharge_name"
-                  value={form.incharge_name}
-                  onChange={(e) => updateForm('incharge_name', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="incharge_phone">In-charge phone no.</label>
-                <input
-                  id="incharge_phone"
-                  type="tel"
-                  value={form.incharge_phone}
-                  onChange={(e) => updateForm('incharge_phone', e.target.value)}
+                  id="invoice_date"
+                  type="date"
+                  value={form.invoice_date}
+                  onChange={(e) => updateForm('invoice_date', e.target.value)}
                 />
               </div>
             </div>
@@ -653,35 +698,8 @@ export default function Assets() {
                 />
               </div>
             </div>
-            <div className="form-row">
-              <div className="field">
-                <label htmlFor="invoice_no">Invoice number</label>
-                <input
-                  id="invoice_no"
-                  value={form.invoice_no}
-                  onChange={(e) => updateForm('invoice_no', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="invoice_date">Invoice date</label>
-                <input
-                  id="invoice_date"
-                  type="date"
-                  value={form.invoice_date}
-                  onChange={(e) => updateForm('invoice_date', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={form.is_issuable}
-                  onChange={(e) => updateForm('is_issuable', e.target.checked)}
-                />{' '}
-                Can be loaned
-              </label>
-            </div>
+
+            <div className="form-section">Notes</div>
             <div className="field">
               <label htmlFor="description">Description</label>
               <textarea
@@ -704,57 +722,26 @@ export default function Assets() {
             </button>
           }
         >
-          <div className="form" style={{ gap: '0.65rem' }}>
-            <div><strong>Unique number:</strong> {detailItem.asset_tag || '—'}</div>
-            {namedCategoryLevels(detailItem.category_path).length ? (
-              namedCategoryLevels(detailItem.category_path).map((l) => (
-                <div key={l.level}><strong>{l.label}:</strong> {l.name}</div>
-              ))
-            ) : (
-              <div><strong>Category:</strong> {detailItem.category_name || '—'}</div>
-            )}
-            <div><strong>Location:</strong> {detailItem.location_name || '—'}</div>
-            <div><strong>Issued to:</strong> {detailItem.issued_to || '—'}</div>
-            <div>
-              <strong>Person in-charge:</strong> {detailItem.incharge_name || '—'}
-              {detailItem.incharge_phone ? ` (${detailItem.incharge_phone})` : ''}
-            </div>
-            <div>
-              <strong>Budget:</strong> {detailItem.budget_type ? budgetTypeLabel(detailItem.budget_type) : '—'}
-              {detailItem.budget_head ? ` — ${detailItem.budget_head}` : ''}
-            </div>
-            <div>
-              <strong>Invoice:</strong> {detailItem.invoice_no || '—'}
-              {detailItem.invoice_date ? ` dated ${formatDate(detailItem.invoice_date)}` : ''}
-            </div>
-            <div><strong>Can be loaned:</strong> {detailItem.is_issuable ? 'Yes' : 'No'}</div>
-            <div><strong>Status / Condition:</strong> {statusMeta(detailItem.status)?.label || detailItem.status} / {conditionMeta(detailItem.condition)?.label || detailItem.condition}</div>
-            <div>
-              <strong>Cost:</strong>{' '}
-              {detailItem.cost != null ? `₹${Number(detailItem.cost).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
-            </div>
-            <div>
-              <strong>Capitalization date:</strong>{' '}
-              {detailItem.capitalization_date ? String(detailItem.capitalization_date).slice(0, 10) : '—'}
-            </div>
-            <div>
-              <strong>Depreciation rate:</strong>{' '}
-              {detailItem.effective_dep_rate_percent != null ? `${detailItem.effective_dep_rate_percent}%` : '—'}
-            </div>
-            <div>
-              <strong>Accumulated depreciation:</strong>{' '}
-              {detailItem.accumulated_depreciation != null
-                ? `₹${Number(detailItem.accumulated_depreciation).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : '—'}
-            </div>
-            <div>
-              <strong>Current book value:</strong>{' '}
-              {detailItem.current_book_value != null
-                ? `₹${Number(detailItem.current_book_value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : '—'}
-            </div>
-          </div>
+          <AssetDetails
+            asset={detailItem}
+            statusMeta={statusMeta}
+            conditionMeta={conditionMeta}
+          />
         </Modal>
+      ) : null}
+
+      {deleteTarget ? (
+        <ConfirmDialog
+          title="Delete asset?"
+          message={`"${deleteTarget.name}" (${deleteTarget.asset_tag || 'no number'}) will be permanently removed.`}
+          confirmLabel="Delete"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={async () => {
+            const id = deleteTarget.id
+            setDeleteTarget(null)
+            await handleDelete(id)
+          }}
+        />
       ) : null}
 
       {showImport ? (

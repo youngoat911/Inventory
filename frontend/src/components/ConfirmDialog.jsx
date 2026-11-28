@@ -18,7 +18,9 @@ export default function ConfirmDialog({
   useEffect(() => {
     const el = dialogRef.current
     if (el && !el.open) el.showModal()
-    return () => { if (el?.open) el.close() }
+    // No cleanup close(): calling it fires the dialog's close event, which runs
+    // onCancel. Under React StrictMode's mount/unmount/mount that cancelled every
+    // dialog as soon as it opened. The element is removed from the DOM on unmount.
   }, [])
 
   function handleBackdrop(e) {

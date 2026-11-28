@@ -97,7 +97,7 @@ export default function Dashboard() {
             <EmptyState icon="box" title="No items yet" />
           ) : (
             <div className="table-wrap">
-              <table>
+              <table className="responsive-table">
                 <thead>
                   <tr>
                     <th scope="col">Item</th>
@@ -108,14 +108,14 @@ export default function Dashboard() {
                 <tbody>
                   {recent.map((item) => (
                     <tr key={item.id}>
-                      <td>
+                      <td data-label="Item" data-card-title>
                         <div>{item.name}</div>
                         <div className="muted">{item.asset_tag || item.location_name || ''}</div>
                       </td>
-                      <td className="muted">
+                      <td className="muted" data-label="Issued to">
                         {item.issued_to || item.incharge_name || '—'}
                       </td>
-                      <td><StatusBadge value={item.status} /></td>
+                      <td data-label="Status"><StatusBadge value={item.status} /></td>
                     </tr>
                   ))}
                 </tbody>

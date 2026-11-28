@@ -14,11 +14,11 @@ const COLORS = [
 ]
 
 const KINDS = [
-  { id: 'status', title: 'Asset statuses', singular: 'status' },
-  { id: 'condition', title: 'Asset conditions', singular: 'condition' },
+  { id: 'status', title: 'Asset statuses', singular: 'status', description: 'Where an item is in its lifecycle. Built-in statuses drive workflows and cannot be removed.' },
+  { id: 'condition', title: 'Asset conditions', singular: 'condition', description: 'Physical state of an item, e.g. add "Good maintenance".' },
 ]
 
-function MasterTable({ kind, title, singular, canManage }) {
+function MasterTable({ kind, title, singular, description, canManage }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -92,10 +92,11 @@ function MasterTable({ kind, title, singular, canManage }) {
   }
 
   return (
-    <div className="panel" style={{ marginBottom: '1.25rem' }}>
-      <div className="page-header" style={{ marginBottom: '0.75rem' }}>
+    <div className="panel">
+      <div className="panel-titlebar">
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.05rem' }}>{title}</h2>
+          <h2>{title}</h2>
+          <p>{description}</p>
         </div>
         {canManage ? (
           <button type="button" className="btn btn-primary btn-sm" onClick={openNew}>
@@ -126,7 +127,7 @@ function MasterTable({ kind, title, singular, canManage }) {
                     <StatusBadge value={row.code} meta={row} />
                     {row.is_system ? <span className="muted" style={{ marginLeft: '0.4rem', fontSize: '0.8rem' }}>built-in</span> : null}
                   </td>
-                  <td className="muted" data-label="Code">{row.code}</td>
+                  <td className="muted" data-label="Code"><code>{row.code}</code></td>
                   <td data-label="Order">{row.sort_order}</td>
                   <td data-label="Assets">{row.asset_count ?? 0}</td>
                   <td data-label="State">{row.is_active ? 'Active' : <span className="muted">Inactive</span>}</td>
@@ -213,9 +214,16 @@ function MasterTable({ kind, title, singular, canManage }) {
 export default function StatusMasterPanel() {
   const { isAdmin } = useAuth()
   return (
-    <div>
+    <div className="stack-gap">
       {KINDS.map((k) => (
-        <MasterTable key={k.id} kind={k.id} title={k.title} singular={k.singular} canManage={isAdmin} />
+        <MasterTable
+          key={k.id}
+          kind={k.id}
+          title={k.title}
+          singular={k.singular}
+          description={k.description}
+          canManage={isAdmin}
+        />
       ))}
     </div>
   )

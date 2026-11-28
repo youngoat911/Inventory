@@ -153,7 +153,7 @@ export default function CascadingCategoryPicker({
         >
           <option value="">
             {!level1
-              ? `Select ${LEVEL_NAMES[1].toLowerCase()} first`
+              ? LEVEL_NAMES[2]
               : l2Options.length === 0
                 ? 'No main categories'
                 : `Select ${LEVEL_NAMES[2].toLowerCase()}`}
